@@ -117,3 +117,9 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 AUTH_USER_MODEL = 'members.User'
+
+
+
+CORS_ALLOW_CREDENTIALS = True   # allows cookies to be sent cross-origin
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False   # False for local development (no HTTPS)

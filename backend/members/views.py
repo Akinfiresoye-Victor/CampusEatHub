@@ -85,15 +85,17 @@ def register_student(request):
             if form.is_valid():
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
+                user.role='student'
+                user.save()
                 StudentData.objects.create(
                     student=user,
                     full_name=cleaned['full_name'],
                     matric_number=cleaned['matric_number'],
                 )
-                user.save()
+                
 
                 login(request, user)
-                return JsonResponse({'success': True, 'message': f'Welcome {user.username}!', 'redirect': 'student:dashboard'})
+                return JsonResponse({'success': True, 'role':'student', 'username':request.user.username})
             else:
                 return JsonResponse({'success': False, 'errors': form.errors})
         else:
@@ -119,15 +121,16 @@ def register_cafeteria(request):
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
                 user.role='cafeteria'
+                user.save()
+                buisness_name=cleaned['buisness_name']
                 CafeteriaData.objects.create(
                     cafeteria=user,
-                    buisness_name=cleaned['buisness_name'],
+                    buisness_name=buisness_name,
                     owner_name=cleaned['owner_name'],
                     phone_number=cleaned['phone_number'],
                 )
-                user.save()
                 login(request, user)
-                return JsonResponse({'success': True, 'message': f'Welcome {user.username}!', 'redirect': 'caf:dashboard'})
+                return JsonResponse({'success': True, 'role': 'cafeteria', 'username': buisness_name })
             else:
                 return JsonResponse({'success': False, 'errors': form.errors})
         else:
