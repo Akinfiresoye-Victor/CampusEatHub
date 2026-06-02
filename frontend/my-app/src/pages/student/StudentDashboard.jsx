@@ -1,0 +1,221 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import AIChatBubble from '../AIChatBubble'
+
+export default function StudentDashboard() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
+
+  const handleSearch = (e) => {
+    e.preventDefault()
+    if (search.trim()) navigate(`/student/products?search=${search}`)
+  }
+
+  const sidebarLinks = [
+    { to: '/student/dashboard', icon: '🏠', label: 'Dashboard', active: true },
+    { to: '/student/products', icon: '🛍️', label: 'All Products' },
+    { to: '/student/cafeterias', icon: '🍽️', label: 'Cafeterias' },
+    { to: '/student/vendor', icon: '🏪', label: 'My Shop' },
+    { to: '/student/orders', icon: '📦', label: 'My Orders' },
+    { to: '/student/spending', icon: '💰', label: 'Spending' },
+  ]
+
+  const quickCards = [
+    { to: '/student/products', icon: '🛍️', label: 'Browse Products', desc: 'Shop from student vendors', color: '#eef2ff', iconBg: '#4f46e5' },
+    { to: '/student/cafeterias', icon: '🍽️', label: 'Cafeterias', desc: 'View cafeteria menus', color: '#f0fdf4', iconBg: '#16a34a' },
+    { to: '/student/cart', icon: '🛒', label: 'My Cart', desc: 'View your cart items', color: '#fff7ed', iconBg: '#ea580c' },
+    { to: '/student/orders', icon: '📦', label: 'My Orders', desc: 'Track your orders', color: '#fdf2f8', iconBg: '#db2777' },
+    { to: '/student/spending', icon: '💰', label: 'Spending', desc: 'View spending history', color: '#fefce8', iconBg: '#ca8a04' },
+    { to: '/student/vendor', icon: '🏪', label: 'My Shop', desc: 'Manage your products', color: '#eff6ff', iconBg: '#2563eb' },
+  ]
+
+  return (
+    <div className="sd-layout">
+
+      {/* SIDEBAR */}
+      <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <div className="sd-sidebar-logo">
+          <img src="/elizade.png" alt="logo" />
+          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+        </div>
+
+        <nav className="sd-sidebar-nav">
+          {sidebarLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`sd-sidebar-link ${link.active ? 'active' : ''}`}
+            >
+              <span className="sd-link-icon">{link.icon}</span>
+              {sidebarOpen && <span className="sd-link-label">{link.label}</span>}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="sd-sidebar-bottom">
+          <div className="sd-divider" />
+          <Link to="/help" className="sd-sidebar-link">
+            <span className="sd-link-icon">❓</span>
+            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
+          </Link>
+          <Link to="/settings" className="sd-sidebar-link">
+            <span className="sd-link-icon">⚙️</span>
+            {sidebarOpen && <span className="sd-link-label">Settings</span>}
+          </Link>
+          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+            <span className="sd-link-icon">🚪</span>
+            {sidebarOpen && <span className="sd-link-label">Logout</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN AREA */}
+      <div className="sd-main">
+
+        {/* TOP NAVBAR */}
+        <header className="sd-topbar">
+          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            ☰
+          </button>
+
+          <form className="sd-search" onSubmit={handleSearch}>
+            <span>🔍</span>
+            <input
+              type="text"
+              placeholder="Search products, cafeterias and more..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <button type="submit">Search</button>
+          </form>
+
+          <div className="sd-topbar-right">
+            <Link to="/student/orders" className="sd-top-icon">
+              <span>📦</span>
+              <small>Orders</small>
+            </Link>
+            <Link to="/student/spending" className="sd-top-icon">
+              <span>💰</span>
+              <small>Spending</small>
+            </Link>
+            <Link to="/student/cart" className="sd-top-icon">
+              <span>🛒</span>
+              <small>Cart</small>
+            </Link>
+            <div className="sd-avatar">
+              <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>
+              <small>{user?.full_name || user?.username || 'Student'} ▾</small>
+            </div>
+          </div>
+        </header>
+
+        {/* CONTENT */}
+        <div className="sd-content">
+
+          {/* WELCOME BANNER */}
+          <div className="sd-banner">
+            <div className="sd-banner-text">
+              <h2>Welcome back, <span>{user?.full_name || user?.username || 'Student'}</span> 👋</h2>
+              <p>What would you like to do today?</p>
+              <div className="sd-banner-btns">
+                <Link to="/student/products" className="sd-banner-btn primary">✨ Explore Now</Link>
+                <Link to="/student/orders" className="sd-banner-btn outline">📦 View My Orders</Link>
+              </div>
+            </div>
+            <div className="sd-banner-img">
+              <img src="/elizade.png" alt="EU" />
+            </div>
+          </div>
+
+          {/* QUICK ACCESS */}
+          <div className="sd-section-header">
+            <h3>Quick Access</h3>
+            <Link to="/student/products" className="sd-view-all">View all →</Link>
+          </div>
+
+          <div className="sd-quick-grid">
+            {quickCards.map((card) => (
+              <Link to={card.to} key={card.to} className="sd-quick-card" style={{ background: card.color }}>
+                <div className="sd-quick-icon" style={{ background: card.iconBg + '22' }}>
+                  <span>{card.icon}</span>
+                </div>
+                <div className="sd-quick-text">
+                  <h4>{card.label}</h4>
+                  <p>{card.desc}</p>
+                </div>
+                <span className="sd-quick-arrow" style={{ color: card.iconBg }}>›</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* BOTTOM ROW */}
+          <div className="sd-bottom-row">
+
+            {/* Recent Activity */}
+            <div className="sd-box">
+              <div className="sd-box-header">
+                <h3>⏱️ Recent Activity</h3>
+              </div>
+              <div className="sd-activity-list">
+                <div className="sd-activity-item">
+                  <div className="sd-activity-icon green">🛒</div>
+                  <div className="sd-activity-text">
+                    <strong>Order placed</strong>
+                    <small>Cafeteria • 2 items</small>
+                  </div>
+                  <span className="sd-activity-time">10 min ago</span>
+                </div>
+                <div className="sd-activity-item">
+                  <div className="sd-activity-icon purple">💰</div>
+                  <div className="sd-activity-text">
+                    <strong>Payment made</strong>
+                    <small>₦2,500</small>
+                  </div>
+                  <span className="sd-activity-time">1 hour ago</span>
+                </div>
+              </div>
+              <Link to="/student/orders" className="sd-view-all-link">View all activity →</Link>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="sd-box">
+              <div className="sd-box-header">
+                <h3>📊 Quick Stats</h3>
+              </div>
+              <div className="sd-stats-grid">
+                <div className="sd-stat-card blue">
+                  <span className="sd-stat-icon">🛍️</span>
+                  <strong>—</strong>
+                  <small>Orders</small>
+                </div>
+                <div className="sd-stat-card green">
+                  <span className="sd-stat-icon">💰</span>
+                  <strong>—</strong>
+                  <small>Total Spent</small>
+                </div>
+                <div className="sd-stat-card orange">
+                  <span className="sd-stat-icon">🏪</span>
+                  <strong>—</strong>
+                  <small>Products Posted</small>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* AI CHATBOT BUBBLE */}
+      <AIChatBubble />
+
+    </div>
+  )
+}

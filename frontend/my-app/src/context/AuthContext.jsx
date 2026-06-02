@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { getMe, logout as logoutApi } from '../api/authApi'
+import LoadingScreen from '../components/LoadingScreen'
 
 const AuthContext = createContext(null)
 
@@ -7,7 +8,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // On app startup — check if session is still valid
   useEffect(() => {
     getMe()
       .then((res) => {
@@ -38,6 +38,8 @@ export function AuthProvider({ children }) {
   }
 
   const isAuthenticated = () => user !== null
+
+  if (isLoading) return <LoadingScreen />
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, isAuthenticated }}>
