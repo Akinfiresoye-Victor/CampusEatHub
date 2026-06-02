@@ -2,9 +2,9 @@ from django.urls import path
 from . import views
 
 
-app_name="student"
+
 
 
 urlpatterns = [
-    
+    path('get_student_data/', views.get_student_data)
 ]

@@ -26,8 +26,11 @@ PRODUCT_STATUS=[
 class StudentData(models.Model):
     student=models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_data')
     full_name= models.CharField(max_length=50, blank=False, null=False)
-    matric_number=models.CharField(max_length=12, blank=False, null=False)
+    matric_number=models.CharField(max_length=13, blank=False, null=False)
     brand_name=models.CharField(max_length=50, blank=True, null=True, default=None)
+    profile_picture=models.ImageField(upload_to='profile/',default=None, null=False, blank=False)
+    def __str__(self):
+        return f'{self.full_name} - {self.matric_number}'
 
 
 
@@ -38,6 +41,8 @@ class StudentProduct(models.Model):
     image=models.ImageField(blank=False, null=False)
     is_available=models.BooleanField(default=True)
     created_at=models.DateTimeField(default=timezone.now)
+    def __str__(self):
+        return f'{self.student.full_name} - {self.product_name}'
 
 
 
