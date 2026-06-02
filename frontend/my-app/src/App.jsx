@@ -1,62 +1,57 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import StudentDashboard from './pages/student/StudentDashboard'
+import ProductsPage from './pages/student/ProductsPage'
+import CafeteriasPage from './pages/student/CafeteriasPage'
+import CafeteriaMenuPage from './pages/student/CafeteriaMenuPage'
+import CartPage from './pages/student/CartPage'
 
-
-// ProtectedRoute component
-function ProtectedRoute({ children, allowedRole }) {
-  const { user, isLoading, isAuthenticated } = useAuth()
-
-  if (isLoading) return <div>Loading...</div>
-  if (!isAuthenticated()) return <Navigate to="/login" />
-  if (allowedRole && user.role !== allowedRole) {
-    if (user.role === 'student') return <Navigate to="/student/dashboard" />
-    if (user.role === 'cafeteria') return <Navigate to="/cafeteria/dashboard" />
-    if (user.role === 'admin') return <Navigate to="/admin/dashboard" />
-  }
-
+// ProtectedRoute temporarily disabled for frontend development
+function ProtectedRoute({ children }) {
   return children
 }
 
 // Placeholder page component
 function Page({ name }) {
-  return <div style={{ padding: '2rem', fontSize: '1.5rem' }}>{name}</div>
+  return <div style={{ padding: '2rem', fontSize: '1.5rem', color: '#4f46e5' }}>{name} — Coming Soon</div>
 }
 
 export default function App() {
   return (
     <Routes>
       {/* Public */}
+      <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
       {/* Student */}
-      <Route path="/student/dashboard" element={<ProtectedRoute allowedRole="student"><Page name="Student Dashboard" /></ProtectedRoute>} />
-      <Route path="/student/products" element={<ProtectedRoute allowedRole="student"><Page name="Products" /></ProtectedRoute>} />
-      <Route path="/student/cafeterias" element={<ProtectedRoute allowedRole="student"><Page name="Cafeterias" /></ProtectedRoute>} />
-      <Route path="/student/cafeteria/:id" element={<ProtectedRoute allowedRole="student"><Page name="Cafeteria Menu" /></ProtectedRoute>} />
-      <Route path="/student/cart" element={<ProtectedRoute allowedRole="student"><Page name="Cart" /></ProtectedRoute>} />
-      <Route path="/student/checkout" element={<ProtectedRoute allowedRole="student"><Page name="Checkout" /></ProtectedRoute>} />
-      <Route path="/student/orders" element={<ProtectedRoute allowedRole="student"><Page name="My Orders" /></ProtectedRoute>} />
-      <Route path="/student/orders/:id" element={<ProtectedRoute allowedRole="student"><Page name="Order Detail" /></ProtectedRoute>} />
-      <Route path="/student/spending" element={<ProtectedRoute allowedRole="student"><Page name="Spending History" /></ProtectedRoute>} />
-      <Route path="/student/vendor" element={<ProtectedRoute allowedRole="student"><Page name="My Shop" /></ProtectedRoute>} />
-      <Route path="/student/ai-recommender" element={<ProtectedRoute allowedRole="student"><Page name="AI Meal Recommender" /></ProtectedRoute>} />
+      <Route path="/student/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+      <Route path="/student/cafeteria/:id" element={<ProtectedRoute><CafeteriaMenuPage /></ProtectedRoute>} />
+      <Route path="/student/cafeterias" element={<ProtectedRoute><CafeteriasPage /></ProtectedRoute>} />
+      <Route path="/student/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+      <Route path="/student/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
+      <Route path="/student/cafeteria/:id" element={<ProtectedRoute><Page name="Cafeteria Menu" /></ProtectedRoute>} />
+      <Route path="/student/checkout" element={<ProtectedRoute><Page name="Checkout" /></ProtectedRoute>} />
+      <Route path="/student/orders" element={<ProtectedRoute><Page name="My Orders" /></ProtectedRoute>} />
+      <Route path="/student/orders/:id" element={<ProtectedRoute><Page name="Order Detail" /></ProtectedRoute>} />
+      <Route path="/student/spending" element={<ProtectedRoute><Page name="Spending History" /></ProtectedRoute>} />
+      <Route path="/student/vendor" element={<ProtectedRoute><Page name="My Shop" /></ProtectedRoute>} />
+      <Route path="/student/ai-recommender" element={<ProtectedRoute><Page name="AI Meal Recommender" /></ProtectedRoute>} />
 
       {/* Cafeteria */}
-      <Route path="/cafeteria/dashboard" element={<ProtectedRoute allowedRole="cafeteria"><Page name="Cafeteria Dashboard" /></ProtectedRoute>} />
-      <Route path="/cafeteria/menu" element={<ProtectedRoute allowedRole="cafeteria"><Page name="Menu Management" /></ProtectedRoute>} />
-      <Route path="/cafeteria/orders" element={<ProtectedRoute allowedRole="cafeteria"><Page name="Cafeteria Orders" /></ProtectedRoute>} />
-      <Route path="/cafeteria/ai-assistant" element={<ProtectedRoute allowedRole="cafeteria"><Page name="Cafeteria AI Assistant" /></ProtectedRoute>} />
+      <Route path="/cafeteria/dashboard" element={<ProtectedRoute><Page name="Cafeteria Dashboard" /></ProtectedRoute>} />
+      <Route path="/cafeteria/menu" element={<ProtectedRoute><Page name="Menu Management" /></ProtectedRoute>} />
+      <Route path="/cafeteria/orders" element={<ProtectedRoute><Page name="Cafeteria Orders" /></ProtectedRoute>} />
+      <Route path="/cafeteria/ai-assistant" element={<ProtectedRoute><Page name="Cafeteria AI Assistant" /></ProtectedRoute>} />
 
       {/* Admin */}
-      <Route path="/admin/dashboard" element={<ProtectedRoute allowedRole="admin"><Page name="Admin Dashboard" /></ProtectedRoute>} />
-      <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><Page name="Users List" /></ProtectedRoute>} />
-      <Route path="/admin/orders" element={<ProtectedRoute allowedRole="admin"><Page name="All Orders" /></ProtectedRoute>} />
-      <Route path="/admin/ai-assistant" element={<ProtectedRoute allowedRole="admin"><Page name="Admin AI Assistant" /></ProtectedRoute>} />
+      <Route path="/admin/dashboard" element={<ProtectedRoute><Page name="Admin Dashboard" /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute><Page name="Users List" /></ProtectedRoute>} />
+      <Route path="/admin/orders" element={<ProtectedRoute><Page name="All Orders" /></ProtectedRoute>} />
+      <Route path="/admin/ai-assistant" element={<ProtectedRoute><Page name="Admin AI Assistant" /></ProtectedRoute>} />
 
-      {/* Default */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   )
