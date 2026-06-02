@@ -88,7 +88,7 @@ export default function RegisterPage() {
     <div className="register-page">
 
       <div className="admin-login">
-        <Link to="/login">← Back to Login</Link>
+        <Link to="/login_user">← Back to Login</Link>
       </div>
 
       <div className="register-card">

@@ -31,7 +31,7 @@ export default function Navbar() {
         {!user && (
           <>
             <Link to="/login" className="nav-link" onClick={() => setMenuOpen(false)}>Login</Link>
-            <Link to="/register" className="nav-link" onClick={() => setMenuOpen(false)}>Register</Link>
+            <Link to="/register_user/" className="nav-link" onClick={() => setMenuOpen(false)}>Register</Link>
           </>
         )}
 
