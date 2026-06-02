@@ -10,6 +10,7 @@ from .forms import StudentSignUpForm, CafeteriaSignUpForm
 from student.models import StudentData
 from cafeteria.models import CafeteriaData  
 import uuid
+from shop.utils import check_role_guard
 
 
 @csrf_exempt
@@ -154,16 +155,18 @@ def register_cafeteria(request):
         return JsonResponse({'success':False,'error': 'Something went wrong'}, status=500)
 
 
+
+
 def me(request):
     if request.method != "GET":
         return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
 
-    if not request.user.is_authenticated:
-        return JsonResponse({"success": False, "error": "Not logged in"}, status=401)
+    auth_error = check_role_guard(request)  # No required_role — just checks if logged in
+    if auth_error:
+        return auth_error
 
     user = request.user
 
-    # Base data every role gets
     data = {
         "id": user.id,
         "username": user.username,

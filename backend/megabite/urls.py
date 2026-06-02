@@ -11,7 +11,7 @@ urlpatterns = [
         path('api/auth/', include('members.urls')),
         path('api/student/', include('student.urls')),
         path('api/cafeteria/', include('cafeteria.urls')),
-        path('api/products/', include('shop.urls')),
+        path('api/', include('shop.urls')),
         path('api/admin/', include('admin_panel.urls')),
     ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

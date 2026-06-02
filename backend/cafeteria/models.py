@@ -13,13 +13,3 @@ class CafeteriaData(models.Model):
     def __str__(self):
         return f'{self.owner_name} - {self.buisness_name}'
 
-
-class CafeteriaProduct(models.Model):
-    cafeteria=models.ForeignKey(CafeteriaData, on_delete=models.CASCADE)
-    product=models.CharField(max_length=50, blank=False, null=False)
-    is_available=models.BooleanField(default=True)
-    price=models.DecimalField(max_digits=15, blank=False, null=False, decimal_places=2)
-    image=models.ImageField(blank=False, null=False)
-    created_at=models.DateTimeField(default=timezone.now)
-    def __str__(self):
-        return f'{self.product} - {self.cafeteria.buisness_name}'
