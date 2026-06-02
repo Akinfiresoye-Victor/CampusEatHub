@@ -9,12 +9,13 @@ from django.views.decorators.csrf import csrf_exempt
 from .forms import StudentSignUpForm, CafeteriaSignUpForm
 from student.models import StudentData
 from cafeteria.models import CafeteriaData  
+import uuid
 
 
 @csrf_exempt
 def login_user(request):
     if request.user.is_authenticated:
-        return JsonResponse({'success': True, 'message': 'Youre already loggid in '}, status=200)
+        return JsonResponse({'success': True, 'message': 'Youre already logged in '}, status=200)
     if request.method != "POST":
         return JsonResponse({"detail": "Method not allowed."}, status=405)
 
@@ -55,7 +56,8 @@ def login_user(request):
                 else:
                     return JsonResponse({'success': True, 'message': f'Welcome back, {user.username}!'})
             else:
-                return JsonResponse({'success': False, 'message': 'Invalid username/email or password. Please try again.'}, status=400)
+                print('Wrong password')
+                return JsonResponse({'success': False, 'error': 'Invalid username/email or password. Please try again.'}, status=400)
         else:
             return JsonResponse({'success': True,'form_fields': ['username', 'password']}, status=200)
         
@@ -98,11 +100,12 @@ def register_student(request):
                     matric_number=cleaned['matric_number'],
                 )
                 
-
+                print('registered')
                 login(request, user)
                 return JsonResponse({'success': True, 'role':'student', 'username':request.user.username}, status=200)
             else:
-                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+                print('Form Errors' ,form.errors)
+                return JsonResponse({'success': False, 'error': form.errors}, status=400)
         else:
             return JsonResponse({'success': True,'form_fields': ['username', 'email', 'password', 'password2']}, status=200)
     except Exception as e:
@@ -128,21 +131,70 @@ def register_cafeteria(request):
             if form.is_valid():
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
+                user.username=uuid.uuid4()
                 user.role='cafeteria'
                 user.save()
-                buisness_name=cleaned['buisness_name']
+                buisness_name=cleaned['business_name']
                 CafeteriaData.objects.create(
                     cafeteria=user,
                     buisness_name=buisness_name,
                     owner_name=cleaned['owner_name'],
                     phone_number=cleaned['phone_number'],
                 )
+                print('registered')
                 login(request, user)
                 return JsonResponse({'success': True, 'role': 'cafeteria', 'username': buisness_name }, status=200)
             else:
-                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+                print(form.errors)
+                return JsonResponse({'success': False, 'error': form.errors}, status=400)
         else:
             return JsonResponse({'success': True,'form_fields': ['username', 'email', 'password', 'password2']}, status=200)
     except Exception as e:
         print(e)
         return JsonResponse({'success':False,'error': 'Something went wrong'}, status=500)
+
+
+def me(request):
+    if request.method != "GET":
+        return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"success": False, "error": "Not logged in"}, status=401)
+
+    user = request.user
+
+    # Base data every role gets
+    data = {
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "email": user.email,
+    }
+
+    if user.role == "student":
+        try:
+            profile = StudentData.objects.get(student=user)
+            data["full_name"] = profile.full_name
+            data["matric_number"] = profile.matric_number
+            data["brand_name"] = profile.brand_name
+            data["pic_url"] = request.build_absolute_uri(profile.profile_picture.url) if profile.profile_picture else None
+        except StudentData.DoesNotExist:
+            data["full_name"] = None
+            data["matric_number"] = None
+            data["brand_name"] = None
+            data["pic_url"] = None
+
+    elif user.role == "cafeteria":
+        try:
+            profile = CafeteriaData.objects.get(cafeteria=user)
+            data["cafeteria_name"] = profile.buisness_name
+            data["owner_name"] = profile.owner_name
+            data["phone_number"] = profile.phone_number
+            data["pic_url"] = request.build_absolute_uri(profile.company_logo.url) if profile.company_logo else None
+        except CafeteriaData.DoesNotExist:
+            data["cafeteria_name"] = None
+            data["owner_name"] = None
+            data["phone_number"] = None
+            data["pic_url"] = None
+
+    return JsonResponse({"success": True, "data": data}, status=200)

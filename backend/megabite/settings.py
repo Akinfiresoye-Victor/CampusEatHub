@@ -111,7 +111,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",  # Good practice to include both
+]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -125,3 +128,10 @@ AUTH_USER_MODEL = 'members.User'
 CORS_ALLOW_CREDENTIALS = True   # allows cookies to be sent cross-origin
 SESSION_COOKIE_SAMESITE = None
 SESSION_COOKIE_SECURE = False   # False for local development (no HTTPS)
+
+
+
+
+# Ensure the CSRF cookie is exposed to your frontend JavaScript
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = False  # Set to True in production (requires HTTPS)

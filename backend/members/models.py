@@ -8,6 +8,6 @@ class User(AbstractUser):
         ('cafeteria', 'cafeteria')
     )
     role=models.CharField(max_length=15, choices=USER_TYPE_CHOICES, default='student')
-    email=models.EmailField(unique=True)
+    email=models.EmailField(unique=True, blank=True, null=True)
     def __str__(self):
         return f'{self.username} - {self.role}'

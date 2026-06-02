@@ -25,17 +25,13 @@ class StudentSignUpForm(ModelForm):
     
     password2=forms.CharField(max_length=50, widget=forms.PasswordInput(
         attrs={'class': 'form-control', 'placeholder': 'Confirm Password'}), help_text='', label='')
-    
-    email=forms.EmailField(max_length=75, widget=forms.EmailInput(
-        attrs={'class':'form-control', 'placeholder': 'Enter Personal Email'}), help_text='', label='')
-
 
 
 
 
 
 class CafeteriaSignUpForm(ModelForm):
-    buisness_name=forms.CharField(max_length=50, widget=forms.TextInput(
+    business_name=forms.CharField(max_length=50, widget=forms.TextInput(
         attrs={'class':'form-control', 'placeholder': 'e.g Dominos Pizza'}))
     phone_number=forms.CharField(max_length=12, widget=forms.TextInput(
         attrs={'class':'form-control', 'placeholder': 'e.g 08012345678'}))

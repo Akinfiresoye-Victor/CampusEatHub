@@ -40,7 +40,6 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
     if (role === 'student' && studentData.password1 !== studentData.password2) {
       setError('Passwords do not match.')
       return
@@ -58,7 +57,8 @@ export default function RegisterPage() {
             full_name: studentData.full_name,
             matric_number: studentData.matric_number,
             username: studentData.username,
-            password: studentData.password1,
+            password1: studentData.password1,
+            password2: studentData.password2,
           }
         : {
             role: 'cafeteria',
@@ -66,7 +66,8 @@ export default function RegisterPage() {
             phone_number: cafeteriaData.phone_number,
             owner_name: cafeteriaData.owner_name,
             email: cafeteriaData.email,
-            password: cafeteriaData.password1,
+            password1: cafeteriaData.password1,
+            password2: cafeteriaData.password2,
           }
 
       const res = await registerApi(payload)

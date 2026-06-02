@@ -4,15 +4,10 @@ import { getCsrfToken } from '../utils/csrf'
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:8000',
   withCredentials: true,
+  xsrfCookieName: 'csrftoken',      // The name of the cookie Django sets
+  xsrfHeaderName: 'X-CSRFToken',
 })
 
-// Attach CSRF token to every non-GET request
-axiosInstance.interceptors.request.use((config) => {
-  if (config.method !== 'get') {
-    config.headers['X-CSRFToken'] = getCsrfToken()
-  }
-  return config
-})
 
 // Redirect to login on 401
 axiosInstance.interceptors.response.use(

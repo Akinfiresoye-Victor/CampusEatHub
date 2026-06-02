@@ -29,7 +29,7 @@ export default function App() {
     <Routes>
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register_user/" element={<RegisterPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       {/* Student */}
       <Route path="/student/dashboard" element={<ProtectedRoute allowedRole="student"><Page name="Student Dashboard" /></ProtectedRoute>} />
