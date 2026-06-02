@@ -7,11 +7,12 @@ from django.views.generic import TemplateView
 urlpatterns = [
         path("admin/", admin.site.urls),
         path('members/', include('django.contrib.auth.urls')),
-        
         # API endpoints with /api/ prefix so React can call them cleanly
         path('api/auth/', include('members.urls')),
-        path('api/student/', include('student.urls', namespace='student')),
-        path('api/caf/', include('cafeteria.urls', namespace='caf')),
+        path('api/student/', include('student.urls')),
+        path('api/cafeteria/', include('cafeteria.urls')),
+        path('api/products/', include('shop.urls')),
+        path('api/admin/', include('admin_panel.urls')),
     ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

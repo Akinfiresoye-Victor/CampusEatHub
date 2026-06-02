@@ -14,8 +14,10 @@ from cafeteria.models import CafeteriaData
 @csrf_exempt
 def login_user(request):
     if request.user.is_authenticated:
-        return JsonResponse({'redirect': 'landing'})
-    
+        return JsonResponse({'success': True, 'message': 'Youre already loggid in '}, status=200)
+    if request.method != "POST":
+        return JsonResponse({"detail": "Method not allowed."}, status=405)
+
     try:
         if request.method == "POST":
             data = json.loads(request.body)
@@ -46,21 +48,21 @@ def login_user(request):
                 
                 # Use user.role instead of request.user.role here (it's safer immediately after login)
                 if request.user.role == 'student':
-                    return JsonResponse({'success': True, 'message': f'Welcome back, {request.user.username}!', 'redirect': 'student:dashboard'})
+                    return JsonResponse({'success': True, 'message': f'Welcome back, {request.user.username}!'}, status=200)
                 elif request.user.role == 'cafeteria':
                     #TODO adjust the message
-                    return JsonResponse({'success': True, 'message': f'Welcome back, {request.user.email}!', 'redirect': 'caf:dashboard'})
+                    return JsonResponse({'success': True, 'message': f'Welcome back, {request.user.email}!'}, status=200)
                 else:
-                    return JsonResponse({'success': True, 'message': f'Welcome back, {user.username}!', 'redirect': 'error'})
+                    return JsonResponse({'success': True, 'message': f'Welcome back, {user.username}!'})
             else:
-                return JsonResponse({'success': False, 'message': 'Invalid username/email or password. Please try again.'})
+                return JsonResponse({'success': False, 'message': 'Invalid username/email or password. Please try again.'}, status=400)
         else:
-            return JsonResponse({'form_fields': ['username', 'password']})
+            return JsonResponse({'success': True,'form_fields': ['username', 'password']}, status=200)
         
     except Exception as e:
         # It's always helpful to print the actual error to your console while building!
         print(f"Login error: {e}")
-        return JsonResponse({'error': "Something went wrong"})
+        return JsonResponse({'success':False,'error': "Something went wrong"}, status=500)
 
 
 
@@ -68,16 +70,19 @@ def login_user(request):
 def logout_user(request):
     if request.user.is_authenticated:
         logout(request)
-        return JsonResponse({'success': True, 'message': 'You have successfully logged out. See you soon!'})
+        return JsonResponse({'success': True, 'message': 'You have successfully logged out. See you soon!'}, status=200)
     else:
-        return JsonResponse({'success': False, 'message': 'Please sign in to perform that action.'})
+        return JsonResponse({'success': False, 'message': 'Please sign in to perform that action.'}, status=401)
 
 
 
 @csrf_exempt
 def register_student(request):
     if request.user.is_authenticated:
-        return JsonResponse({'redirect': 'landing'})
+        return JsonResponse({'success': True, 'message': 'Youre already loggid in '}, status=200)
+    if request.method != "POST":
+        return JsonResponse({"detail": "Method not allowed."}, status=405)
+
     try:
         if request.method == 'POST':
             data = json.loads(request.body)
@@ -95,14 +100,14 @@ def register_student(request):
                 
 
                 login(request, user)
-                return JsonResponse({'success': True, 'role':'student', 'username':request.user.username})
+                return JsonResponse({'success': True, 'role':'student', 'username':request.user.username}, status=200)
             else:
-                return JsonResponse({'success': False, 'errors': form.errors})
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
         else:
-            return JsonResponse({'form_fields': ['username', 'email', 'password', 'password2']})
+            return JsonResponse({'success': True,'form_fields': ['username', 'email', 'password', 'password2']}, status=200)
     except Exception as e:
         print(e)
-        return JsonResponse({'error': 'Something went wrong'})
+        return JsonResponse({'success':False,'error': 'Something went wrong'}, status=500)
     
 
 
@@ -112,7 +117,10 @@ def register_student(request):
 @csrf_exempt
 def register_cafeteria(request):
     if request.user.is_authenticated:
-        return JsonResponse({'redirect': 'landing'})
+        return JsonResponse({'success': True, 'message': 'Youre already loggid in '}, status=200)
+    if request.method != "POST":
+        return JsonResponse({"detail": "Method not allowed."}, status=405)
+
     try:
         if request.method == 'POST':
             data = json.loads(request.body)
@@ -130,11 +138,11 @@ def register_cafeteria(request):
                     phone_number=cleaned['phone_number'],
                 )
                 login(request, user)
-                return JsonResponse({'success': True, 'role': 'cafeteria', 'username': buisness_name })
+                return JsonResponse({'success': True, 'role': 'cafeteria', 'username': buisness_name }, status=200)
             else:
-                return JsonResponse({'success': False, 'errors': form.errors})
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
         else:
-            return JsonResponse({'form_fields': ['username', 'email', 'password', 'password2']})
+            return JsonResponse({'success': True,'form_fields': ['username', 'email', 'password', 'password2']}, status=200)
     except Exception as e:
         print(e)
-        return JsonResponse({'error': 'Something went wrong'})
+        return JsonResponse({'success':False,'error': 'Something went wrong'}, status=500)
