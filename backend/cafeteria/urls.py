@@ -2,9 +2,9 @@ from django.urls import path
 from . import views
 
 
-app_name="caf"
+
 
 
 urlpatterns = [
-    
+    path('get_cafeteria_data/', views.get_cafeteria_data)
 ]

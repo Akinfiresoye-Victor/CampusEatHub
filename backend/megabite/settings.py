@@ -28,7 +28,9 @@ INSTALLED_APPS = [
     'cafeteria',
     'student',
     'members',
-    'corsheaders'
+    'shop',
+    'admin_panel',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -112,8 +114,8 @@ STATIC_URL = 'static/'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 AUTH_USER_MODEL = 'members.User'
@@ -121,5 +123,5 @@ AUTH_USER_MODEL = 'members.User'
 
 
 CORS_ALLOW_CREDENTIALS = True   # allows cookies to be sent cross-origin
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = None
 SESSION_COOKIE_SECURE = False   # False for local development (no HTTPS)
