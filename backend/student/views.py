@@ -5,12 +5,12 @@ from django.views.decorators.csrf import csrf_exempt
 from shop.utils import check_role_guard
 from shop.models import Product, Order, OrderItem, Cart, CartItem
 import json
-
-
-
-
-
-
+import os
+from decimal import Decimal
+from django.db import transaction
+from django.db.models import Sum, Count
+from django.contrib.auth import get_user_model
+from decouple import config
 
 
 
@@ -493,3 +493,287 @@ def manage_student_cart(request, cart_id=None):
 
     else:
         return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)  # FIX: was success:True
+
+
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADD these imports to the top of student/views.py
+# (alongside the imports already there)
+# ─────────────────────────────────────────────────────────────────────────────
+import os
+from decimal import Decimal
+from django.db import transaction
+from django.db.models import Sum, Count
+from django.contrib.auth import get_user_model
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPER  —  resolves a seller User → their display name
+# Cafeteria sellers: use business name from CafeteriaData
+# Student vendors  : use full name from StudentData
+# Falls back to username if no profile exists (shouldn't happen in production)
+# ─────────────────────────────────────────────────────────────────────────────
+def _get_seller_name(seller):
+    if seller.role == 'cafeteria':
+        profile = seller.cafeteriadata_set.first()
+        return profile.buisness_name if profile else seller.username
+    else:
+        profile = seller.student_data.first()
+        return profile.full_name if profile else seller.username
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 15 — POST /api/student/orders/checkout/
+# ─────────────────────────────────────────────────────────────────────────────
+@csrf_exempt
+def student_checkout(request):
+    auth_error = check_role_guard(request, required_role='student')
+    if auth_error:
+        return auth_error
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        # ── 1. Get cart and make sure it has items ────────────────────────────
+        cart, _ = Cart.objects.get_or_create(student=request.user)
+        cart_items = CartItem.objects.filter(cart=cart).select_related('product')
+
+        if not cart_items.exists():
+            return JsonResponse({'success': False, 'error': 'Your cart is empty.'}, status=400)
+
+        # ── 2. Parse delivery_type from request body ──────────────────────────
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON body'}, status=400)
+
+        delivery_type = body.get('delivery_type')
+        if delivery_type not in ('pickup', 'delivery'):
+            return JsonResponse(
+                {'success': False, 'error': 'delivery_type must be "pickup" or "delivery".'},
+                status=400
+            )
+
+        # ── 3. Calculate fees with Decimal (no float rounding errors) ─────────
+        if delivery_type == 'pickup':
+            delivery_fee = Decimal('0.00')
+        else:
+            # DELIVERY_FEE must be set in your .env  e.g. DELIVERY_FEE=500.00
+            delivery_fee = config('DELIVERY_FEE', cast=Decimal)
+
+        subtotal = Decimal('0.00')
+        for item in cart_items:
+            subtotal += item.product.price * item.quantity   # Decimal * int → Decimal
+
+        total_amount = subtotal + delivery_fee
+
+        # ── 4. Atomic block — all saves succeed together or none do ───────────
+        with transaction.atomic():
+            order = Order.objects.create(
+                buyer=request.user,
+                seller=cart.seller,
+                total_ammount=total_amount,   # NOTE: matches the typo in the model field name
+                delivery_type=delivery_type,
+                delivery_fee=delivery_fee,
+                status='pending',
+            )
+
+            for item in cart_items:
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    quantity=item.quantity,
+                    price_at_time=item.product.price,   # snapshot price right now
+                )
+
+            # Clear the cart fully
+            CartItem.objects.filter(cart=cart).delete()
+            cart.seller = None
+            cart.save()
+
+        # ── 5. Build and return the new order's full details ──────────────────
+        order_items = OrderItem.objects.filter(order=order).select_related('product')
+        items_list = []
+        for item in order_items:
+            items_list.append({
+                'product_name': item.product.name,
+                'quantity': item.quantity,
+                'price_at_time': str(item.price_at_time),
+                'subtotal': str(item.price_at_time * item.quantity),
+            })
+
+        return JsonResponse({
+            'success': True,
+            'order': {
+                'id': order.pk,
+                'seller_name': _get_seller_name(order.seller),
+                'total_amount': str(order.total_ammount),
+                'delivery_type': order.delivery_type,
+                'delivery_fee': str(order.delivery_fee),
+                'status': order.status,
+                'created_at': order.created_at.isoformat(),
+                'items': items_list,
+            }
+        }, status=201)
+
+    except Exception as e:
+        print(e)
+        return JsonResponse({'success': False, 'error': 'Something went wrong'}, status=500)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 16a — GET /api/student/orders/
+# Returns all orders for the logged-in student, newest first.
+# ─────────────────────────────────────────────────────────────────────────────
+@csrf_exempt
+def student_orders_list(request):
+    auth_error = check_role_guard(request, required_role='student')
+    if auth_error:
+        return auth_error
+
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        orders = (
+            Order.objects
+            .filter(buyer=request.user)
+            .order_by('-created_at')
+            .select_related('seller')       # avoids one extra DB hit per order for the seller
+        )
+
+        orders_list = []
+        for order in orders:
+            orders_list.append({
+                'id': order.pk,
+                'seller_full_name': _get_seller_name(order.seller),
+                'total_amount': str(order.total_ammount),
+                'delivery_type': order.delivery_type,
+                'delivery_fee': str(order.delivery_fee),
+                'status': order.status,
+                'created_at': order.created_at.isoformat(),
+            })
+
+        return JsonResponse({'success': True, 'orders': orders_list}, status=200)
+
+    except Exception as e:
+        print(e)
+        return JsonResponse({'success': False, 'error': 'Error retrieving orders'}, status=500)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 16b — GET /api/student/orders/<order_id>/
+# Returns one order in full detail. 403 if it belongs to a different student.
+# ─────────────────────────────────────────────────────────────────────────────
+@csrf_exempt
+def student_order_detail(request, order_id):
+    auth_error = check_role_guard(request, required_role='student')
+    if auth_error:
+        return auth_error
+
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        try:
+            order = Order.objects.select_related('seller').get(pk=order_id)
+        except Order.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Order not found'}, status=404)
+
+        # A student must never see another student's order
+        if order.buyer != request.user:
+            return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
+
+        order_items = OrderItem.objects.filter(order=order).select_related('product')
+        items_list = []
+        for item in order_items:
+            items_list.append({
+                'product_name': item.product.name,
+                'quantity': item.quantity,
+                'price_at_time': str(item.price_at_time),
+                'subtotal': str(item.price_at_time * item.quantity),
+            })
+
+        return JsonResponse({
+            'success': True,
+            'order': {
+                'id': order.pk,
+                'seller_full_name': _get_seller_name(order.seller),
+                'total_amount': str(order.total_ammount),
+                'delivery_type': order.delivery_type,
+                'delivery_fee': str(order.delivery_fee),
+                'status': order.status,
+                'created_at': order.created_at.isoformat(),
+                'updated_at': order.updated_at.isoformat(),
+                'items': items_list,
+            }
+        }, status=200)
+
+    except Exception as e:
+        print(e)
+        return JsonResponse({'success': False, 'error': 'Error retrieving order'}, status=500)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 16c — GET /api/student/orders/spending/
+# Aggregate spending stats for the logged-in student.
+# ─────────────────────────────────────────────────────────────────────────────
+@csrf_exempt
+def student_spending(request):
+    auth_error = check_role_guard(request, required_role='student')
+    if auth_error:
+        return auth_error
+
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        User = get_user_model()
+        orders = Order.objects.filter(buyer=request.user)
+
+        # ── Overall totals ────────────────────────────────────────────────────
+        aggregate = orders.aggregate(
+            total_spent=Sum('total_ammount'),   # NOTE: matches the typo in the model
+            total_orders=Count('id'),
+        )
+        total_spent  = aggregate['total_spent']  or Decimal('0.00')
+        total_orders = aggregate['total_orders'] or 0
+
+        # ── Per-seller breakdown (SQL GROUP BY in a single query) ─────────────
+        # values('seller_id') + annotate(...) → Django's equivalent of GROUP BY seller_id
+        per_seller_agg = (
+            orders
+            .values('seller_id')
+            .annotate(amount_spent=Sum('total_ammount'))
+        )
+
+        # Resolve all seller names in one bulk query (avoids N+1)
+        seller_ids = [row['seller_id'] for row in per_seller_agg]
+        sellers = {
+            u.pk: u
+            for u in User.objects
+                         .filter(pk__in=seller_ids)
+                         .prefetch_related('student_data', 'cafeteriadata_set')
+        }
+
+        per_seller = []
+        for row in per_seller_agg:
+            seller = sellers.get(row['seller_id'])
+            per_seller.append({
+                'seller_name': _get_seller_name(seller) if seller else 'Unknown',
+                'amount_spent': str(row['amount_spent']),
+            })
+
+        return JsonResponse({
+            'success': True,
+            'total_spent': str(total_spent),
+            'total_orders': total_orders,
+            'per_seller_breakdown': per_seller,
+        }, status=200)
+
+    except Exception as e:
+        print(e)
+        return JsonResponse({'success': False, 'error': 'Error retrieving spending data'}, status=500)
