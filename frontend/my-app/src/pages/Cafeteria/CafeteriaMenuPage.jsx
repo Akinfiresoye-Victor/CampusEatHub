@@ -1,0 +1,307 @@
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import {
+  getCafeteriaMenu,
+  addMenuItem,
+  updateMenuItem,
+  toggleMenuItem,
+  deleteMenuItem
+} from '../../api/cafeteriaApi'
+import { formatNaira } from '../../utils/naira'
+import AIChatBubble from '../AIChatBubble'
+
+const DUMMY_MENU = [
+  { id: 1, name: 'Jollof Rice & Chicken', price: 1500, available: true, category: 'Lunch', image: null },
+  { id: 2, name: 'Fried Rice & Turkey', price: 1800, available: true, category: 'Lunch', image: null },
+  { id: 3, name: 'Pounded Yam & Egusi', price: 2000, available: false, category: 'Dinner', image: null },
+  { id: 4, name: 'Chapman Drink', price: 600, available: true, category: 'Beverages', image: null },
+  { id: 5, name: 'Moi Moi', price: 500, available: true, category: 'Snacks', image: null },
+  { id: 6, name: 'Indomie & Egg', price: 800, available: false, category: 'Breakfast', image: null },
+]
+
+export default function CafeteriaMenuPage() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [menuItems, setMenuItems] = useState(DUMMY_MENU)
+  const [loading, setLoading] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [editItem, setEditItem] = useState(null)
+  const [toast, setToast] = useState('')
+  const [toggling, setToggling] = useState(null)
+  const [deleting, setDeleting] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
+  const fileRef = useRef()
+
+  const [form, setForm] = useState({ name: '', price: '', category: '' })
+
+  useEffect(() => {
+    setLoading(true)
+    getCafeteriaMenu()
+      .then((res) => {
+        if (res.data.success && res.data.data?.length > 0) {
+          setMenuItems(res.data.data)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const showToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
+
+  const openAddModal = () => {
+    setEditItem(null)
+    setForm({ name: '', price: '', category: '' })
+    setShowModal(true)
+  }
+
+  const openEditModal = (item) => {
+    setEditItem(item)
+    setForm({ name: item.name, price: item.price, category: item.category || '' })
+    setShowModal(true)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const data = new FormData()
+      data.append('name', form.name)
+      data.append('price', form.price)
+      data.append('category', form.category)
+      if (fileRef.current?.files[0]) {
+        data.append('image', fileRef.current.files[0])
+      }
+
+      if (editItem) {
+        const res = await updateMenuItem(editItem.id, data)
+        if (res.data.success) {
+          setMenuItems((prev) => prev.map((i) => i.id === editItem.id ? res.data.data : i))
+          showToast('Item updated!')
+        }
+      } else {
+        const res = await addMenuItem(data)
+        if (res.data.success) {
+          setMenuItems((prev) => [...prev, res.data.data])
+          showToast('Item added!')
+        }
+      }
+      setShowModal(false)
+    } catch {
+      const dummy = {
+        id: Date.now(),
+        name: form.name,
+        price: Number(form.price),
+        category: form.category,
+        available: true,
+        image: null,
+      }
+      if (editItem) {
+        setMenuItems((prev) => prev.map((i) => i.id === editItem.id ? { ...i, ...dummy, id: i.id } : i))
+        showToast('Item updated!')
+      } else {
+        setMenuItems((prev) => [...prev, dummy])
+        showToast('Item added!')
+      }
+      setShowModal(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggle = async (item) => {
+    setToggling(item.id)
+    setMenuItems((prev) => prev.map((i) => i.id === item.id ? { ...i, available: !i.available } : i))
+    try {
+      await toggleMenuItem(item.id)
+    } catch {
+      setMenuItems((prev) => prev.map((i) => i.id === item.id ? { ...i, available: item.available } : i))
+      showToast('Failed to update availability.')
+    } finally {
+      setToggling(null)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this menu item?')) return
+    setDeleting(id)
+    try { await deleteMenuItem(id) } catch {}
+    setMenuItems((prev) => prev.filter((i) => i.id !== id))
+    setDeleting(null)
+    showToast('Item deleted.')
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
+
+  const sidebarLinks = [
+  { to: '/cafeteria/dashboard', icon: '🏠', label: 'Dashboard', active: true }, // change active per page
+  { to: '/cafeteria/menu', icon: '🍴', label: 'Menu Management' },
+  { to: '/cafeteria/orders', icon: '📋', label: 'Orders', badge: stats?.pending_orders || 0 },
+  { to: '/cafeteria/analytics', icon: '📊', label: 'Analytics' },
+
+  ]
+
+  const filtered = menuItems.filter((i) =>
+    i.name?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div className="sd-layout">
+      <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <div className="sd-sidebar-logo">
+          <img src="/elizade.png" alt="logo" />
+          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+        </div>
+        <nav className="sd-sidebar-nav">
+          {sidebarLinks.map((link) => (
+            <Link key={link.to} to={link.to} className={`sd-sidebar-link ${link.active ? 'active' : ''}`}>
+              <span className="sd-link-icon">{link.icon}</span>
+              {sidebarOpen && <span className="sd-link-label">{link.label}</span>}
+            </Link>
+          ))}
+        </nav>
+        <div className="sd-sidebar-bottom">
+          <div className="sd-divider" />
+          <Link to="/help" className="sd-sidebar-link"><span className="sd-link-icon">❓</span>{sidebarOpen && <span className="sd-link-label">Help & Support</span>}</Link>
+          <Link to="/settings" className="sd-sidebar-link"><span className="sd-link-icon">⚙️</span>{sidebarOpen && <span className="sd-link-label">Settings</span>}</Link>
+          <button className="sd-sidebar-link logout" onClick={handleLogout}><span className="sd-link-icon">🚪</span>{sidebarOpen && <span className="sd-link-label">Logout</span>}</button>
+        </div>
+      </aside>
+
+      <div className="sd-main">
+        <header className="sd-topbar">
+          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <form className="sd-search" onSubmit={(e) => e.preventDefault()}>
+            <span>🔍</span>
+            <input type="text" placeholder="Search menu items..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <button type="submit">Search</button>
+          </form>
+          <div className="sd-topbar-right">
+            <Link to="/cafeteria/orders" className="sd-top-icon"><span>📋</span><small>Orders</small></Link>
+            <div className="sd-avatar">
+              <span>{(user?.full_name || 'C')[0].toUpperCase()}</span>
+              <small>Cafeteria Owner ▾</small>
+            </div>
+          </div>
+        </header>
+
+        <div className="sd-content">
+          {toast && <div className="pp-toast">{toast}</div>}
+
+          <div className="pp-header">
+            <div>
+              <h2>🍴 Menu Management</h2>
+              <p>Add, edit, and manage your menu items.</p>
+            </div>
+            <button className="pp-add-btn" onClick={openAddModal}>+ Add Menu Item</button>
+          </div>
+
+          {/* STATS */}
+          <div className="vendor-stats">
+            <div className="vendor-stat">
+              <span>🗂️</span>
+              <div><strong>{menuItems.length}</strong><small>Total Items</small></div>
+            </div>
+            <div className="vendor-stat">
+              <span>✅</span>
+              <div><strong>{menuItems.filter(i => i.available).length}</strong><small>Available</small></div>
+            </div>
+            <div className="vendor-stat">
+              <span>❌</span>
+              <div><strong>{menuItems.filter(i => !i.available).length}</strong><small>Unavailable</small></div>
+            </div>
+          </div>
+
+          {loading && <div className="pp-state"><div className="pp-spinner" /><p>Loading menu...</p></div>}
+
+          {!loading && (
+            <div className="vendor-grid">
+              {filtered.map((item) => (
+                <div key={item.id} className={`vendor-card ${!item.available ? 'unavailable' : ''}`}>
+                  <div className="vendor-card-img">
+                    {item.image
+                      ? <img src={item.image} alt={item.name} />
+                      : <div className="vendor-img-placeholder">🍛</div>
+                    }
+                    <span className={`vendor-badge ${item.available ? 'available' : 'unavailable'}`}>
+                      {item.available ? 'Available' : 'Unavailable'}
+                    </span>
+                  </div>
+                  <div className="vendor-card-body">
+                    <h4>{item.name}</h4>
+                    <p>{item.category || 'General'}</p>
+                    <strong>{formatNaira(item.price)}</strong>
+                    <div className="vendor-actions">
+                      <button
+                        className={`vendor-toggle ${item.available ? 'on' : 'off'}`}
+                        onClick={() => handleToggle(item)}
+                        disabled={toggling === item.id}
+                      >
+                        {item.available ? '✅ Available' : '❌ Unavailable'}
+                      </button>
+                      <div className="vendor-btn-row">
+                        <button className="vendor-edit-btn" onClick={() => openEditModal(item)}>✏️ Edit</button>
+                        <button
+                          className="vendor-delete-btn"
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deleting === item.id}
+                        >🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{editItem ? '✏️ Edit Menu Item' : '+ Add Menu Item'}</h3>
+              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleSubmit} className="modal-form">
+              <label>Item Name</label>
+              <div className="input-group">
+                <span className="icon">🍛</span>
+                <input type="text" name="name" placeholder="e.g. Jollof Rice & Chicken" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              </div>
+              <label>Price (₦)</label>
+              <div className="input-group">
+                <span className="icon">💰</span>
+                <input type="number" name="price" placeholder="e.g. 1500" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+              </div>
+              <label>Category</label>
+              <div className="input-group">
+                <span className="icon">📂</span>
+                <input type="text" name="category" placeholder="e.g. Lunch, Snacks, Beverages" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              </div>
+              <label>Image</label>
+              <div className="input-group">
+                <span className="icon">🖼️</span>
+                <input type="file" accept="image/*" ref={fileRef} />
+              </div>
+              <button type="submit" className="submit-btn" disabled={saving}>
+                {saving ? 'Saving...' : editItem ? 'Update Item' : 'Add Item'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <AIChatBubble />
+    </div>
+  )
+}
