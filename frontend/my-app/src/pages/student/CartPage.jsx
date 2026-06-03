@@ -1,83 +1,51 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { getCart, updateCartItem, removeCartItem, clearCart } from '../../api/cartApi'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useCartStore } from '../../stores/useCartStore'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
-  Trash2, MapPin, Lock
+  Trash2, Lock, AlertTriangle
 } from 'lucide-react'
 
-const DUMMY_CART = {
-  items: [
-    { id: 1, product_id: 1, name: 'Jollof Rice & Chicken', category: 'Lunch', seller_name: "Mama Nkechi's Kitchen", price: 1500, quantity: 1, image: null, available: true },
-    { id: 2, product_id: 2, name: 'Chapman Drink', category: 'Beverages', seller_name: "Mama Nkechi's Kitchen", price: 600, quantity: 2, image: null, available: true },
-    { id: 3, product_id: 3, name: 'Moi Moi', category: 'Snacks', seller_name: "Mama Nkechi's Kitchen", price: 500, quantity: 1, image: null, available: true },
-  ],
-  seller_name: "Mama Nkechi's Kitchen",
-}
-
 export default function CartPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { items, sellerName, sellerLockError, isLoading, fetchCart, updateItem, removeItem, clearCart, clearSellerLockError } = useCartStore()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [cart, setCart] = useState(DUMMY_CART)
-  const [loading, setLoading] = useState(false)
   const [updatingId, setUpdatingId] = useState(null)
   const [deliveryType, setDeliveryType] = useState('pickup')
-  const [deliveryLocation, setDeliveryLocation] = useState('')
   const [toast, setToast] = useState('')
   const [search, setSearch] = useState('')
 
   const DELIVERY_FEE = 200
 
   useEffect(() => {
-    setLoading(true)
-    getCart()
-      .then((res) => {
-        if (res.data.success && res.data.data?.items?.length > 0) setCart(res.data.data)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    fetchCart()
   }, [])
 
-  const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const total = deliveryType === 'delivery' ? subtotal + DELIVERY_FEE : subtotal
 
   const handleQuantity = async (itemId, newQty) => {
     if (newQty < 1) return handleRemove(itemId)
     setUpdatingId(itemId)
-    try {
-      const res = await updateCartItem(itemId, { quantity: newQty })
-      if (res.data.success) {
-        setCart((prev) => ({ ...prev, items: prev.items.map((i) => i.id === itemId ? { ...i, quantity: newQty } : i) }))
-      }
-    } catch {
-      setCart((prev) => ({ ...prev, items: prev.items.map((i) => i.id === itemId ? { ...i, quantity: newQty } : i) }))
-    } finally {
-      setUpdatingId(null)
-    }
+    await updateItem(itemId, newQty)
+    setUpdatingId(null)
   }
 
   const handleRemove = async (itemId) => {
     setUpdatingId(itemId)
-    try { await removeCartItem(itemId) } catch {}
-    setCart((prev) => ({ ...prev, items: prev.items.filter((i) => i.id !== itemId) }))
+    await removeItem(itemId)
     setUpdatingId(null)
   }
 
   const handleClearCart = async () => {
-    try { await clearCart() } catch {}
-    setCart({ items: [], seller_name: '' })
+    await clearCart()
     setToast('Cart cleared!')
     setTimeout(() => setToast(''), 3000)
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
   }
 
   const sidebarLinks = [
@@ -95,7 +63,7 @@ export default function CartPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -107,15 +75,7 @@ export default function CartPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -146,28 +106,46 @@ export default function CartPage() {
         <div className="sd-content">
           {toast && <div className="pp-toast">{toast}</div>}
 
-          <div className="pp-header">
-            <div>
-              <h2>Your Cart <ShoppingCart size={22} /> <span className="cart-count-badge">{cart.items.length}</span></h2>
-              <p>Review your items and proceed to checkout.</p>
-            </div>
-            <Link to="/student/products" className="cart-continue-btn">← Continue Shopping</Link>
-          </div>
-
-          {cart.items.length === 0 && (
-            <div className="pp-state">
-              <ShoppingCart size={52} />
-              <p>Your cart is empty.</p>
-              <Link to="/student/products" className="pp-add-btn" style={{ marginTop: '15px' }}>Browse Products</Link>
+          {/* Seller lock error */}
+          {sellerLockError && (
+            <div className="pp-cart-error">
+              <span><AlertTriangle size={16} /> {sellerLockError}</span>
+              <button onClick={async () => {
+                await handleClearCart()
+                clearSellerLockError()
+              }}>Clear Cart</button>
             </div>
           )}
 
-          {cart.items.length > 0 && (
+          <div className="pp-header">
+            <div>
+              <h2>Your Cart <ShoppingCart size={22} /> <span className="cart-count-badge">{items.length}</span></h2>
+              <p>Review your items and proceed to checkout.</p>
+            </div>
+            <Link to="/student/cafeterias" className="cart-continue-btn">← Continue Shopping</Link>
+          </div>
+
+          {isLoading && (
+            <div className="pp-state">
+              <div className="pp-spinner" />
+              <p>Loading your cart...</p>
+            </div>
+          )}
+
+          {!isLoading && items.length === 0 && (
+            <div className="pp-state">
+              <ShoppingCart size={52} />
+              <p>Your cart is empty.</p>
+              <Link to="/student/cafeterias" className="pp-add-btn" style={{ marginTop: '15px' }}>Browse Cafeterias</Link>
+            </div>
+          )}
+
+          {!isLoading && items.length > 0 && (
             <div className="cart-body">
               <div className="cart-items-section">
-                {cart.seller_name && (
+                {sellerName && (
                   <div className="cart-seller-info">
-                    <Store size={16} /> Ordering from: <strong>{cart.seller_name}</strong>
+                    <Store size={16} /> Ordering from: <strong>{sellerName}</strong>
                     <button className="cart-clear-btn" onClick={handleClearCart}>
                       <Trash2 size={15} /> Clear Cart
                     </button>
@@ -182,7 +160,7 @@ export default function CartPage() {
                   <span></span>
                 </div>
 
-                {cart.items.map((item) => (
+                {items.map((item) => (
                   <div key={item.id} className="cart-item">
                     <div className="cart-item-info">
                       <div className="cart-item-img">
@@ -194,7 +172,6 @@ export default function CartPage() {
                       <div className="cart-item-details">
                         <h4>{item.name}</h4>
                         <p>{item.category}</p>
-                        <p>Seller: {item.seller_name}</p>
                         <span className="cart-in-stock">In Stock</span>
                       </div>
                     </div>
@@ -215,7 +192,7 @@ export default function CartPage() {
               <div className="cart-summary">
                 <h3>Order Summary</h3>
                 <div className="cart-summary-row">
-                  <span>Subtotal ({cart.items.length} items)</span>
+                  <span>Subtotal ({items.length} items)</span>
                   <span>{formatNaira(subtotal)}</span>
                 </div>
                 <div className="cart-summary-row">
@@ -238,19 +215,6 @@ export default function CartPage() {
                   <span>{formatNaira(DELIVERY_FEE)}</span>
                 </div>
 
-                {deliveryType === 'delivery' && (
-                  <div className="cart-location-wrap">
-                    <label><MapPin size={14} /> Delivery Location</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Block B, Room 204, Hostel 3"
-                      className="cart-location-input"
-                      value={deliveryLocation}
-                      onChange={(e) => setDeliveryLocation(e.target.value)}
-                    />
-                  </div>
-                )}
-
                 <div className={`cart-delivery-option ${deliveryType === 'pickup' ? 'selected' : ''}`} onClick={() => setDeliveryType('pickup')}>
                   <input type="radio" checked={deliveryType === 'pickup'} onChange={() => setDeliveryType('pickup')} />
                   <div>
@@ -260,7 +224,10 @@ export default function CartPage() {
                   <span className="cart-free">Free</span>
                 </div>
 
-                <button className="cart-checkout-btn" onClick={() => navigate('/student/checkout', { state: { deliveryType, deliveryLocation, total } })}>
+                <button
+                  className="cart-checkout-btn"
+                  onClick={() => navigate('/student/checkout', { state: { deliveryType, total } })}
+                >
                   Proceed to Checkout →
                 </button>
                 <p className="cart-secure"><Lock size={14} /> Secure checkout</p>

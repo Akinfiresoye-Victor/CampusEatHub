@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../stores/useAuthStore'
 import {
   getCafeteriaMenu,
   addMenuItem,
@@ -10,22 +10,17 @@ import {
 } from '../../api/cafeteriaApi'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
-
-const DUMMY_MENU = [
-  { id: 1, name: 'Jollof Rice & Chicken', price: 1500, available: true, category: 'Lunch', image: null },
-  { id: 2, name: 'Fried Rice & Turkey', price: 1800, available: true, category: 'Lunch', image: null },
-  { id: 3, name: 'Pounded Yam & Egusi', price: 2000, available: false, category: 'Dinner', image: null },
-  { id: 4, name: 'Chapman Drink', price: 600, available: true, category: 'Beverages', image: null },
-  { id: 5, name: 'Moi Moi', price: 500, available: true, category: 'Snacks', image: null },
-  { id: 6, name: 'Indomie & Egg', price: 800, available: false, category: 'Breakfast', image: null },
-]
+import {
+  Home, UtensilsCrossed, ClipboardList, BarChart3,
+  LogOut, Menu, Search, CircleHelp, Settings
+} from 'lucide-react'
 
 export default function CafeteriaMenuPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [menuItems, setMenuItems] = useState(DUMMY_MENU)
-  const [loading, setLoading] = useState(false)
+  const [menuItems, setMenuItems] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [toast, setToast] = useState('')
@@ -83,32 +78,22 @@ export default function CafeteriaMenuPage() {
         if (res.data.success) {
           setMenuItems((prev) => prev.map((i) => i.id === editItem.id ? res.data.data : i))
           showToast('Item updated!')
+          setShowModal(false)
+        } else {
+          showToast(res.data.error || 'Failed to update item.')
         }
       } else {
         const res = await addMenuItem(data)
         if (res.data.success) {
           setMenuItems((prev) => [...prev, res.data.data])
           showToast('Item added!')
+          setShowModal(false)
+        } else {
+          showToast(res.data.error || 'Failed to add item.')
         }
       }
-      setShowModal(false)
-    } catch {
-      const dummy = {
-        id: Date.now(),
-        name: form.name,
-        price: Number(form.price),
-        category: form.category,
-        available: true,
-        image: null,
-      }
-      if (editItem) {
-        setMenuItems((prev) => prev.map((i) => i.id === editItem.id ? { ...i, ...dummy, id: i.id } : i))
-        showToast('Item updated!')
-      } else {
-        setMenuItems((prev) => [...prev, dummy])
-        showToast('Item added!')
-      }
-      setShowModal(false)
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to save item.')
     } finally {
       setSaving(false)
     }
@@ -142,11 +127,10 @@ export default function CafeteriaMenuPage() {
   }
 
   const sidebarLinks = [
-  { to: '/cafeteria/dashboard', icon: '🏠', label: 'Dashboard', active: true }, // change active per page
-  { to: '/cafeteria/menu', icon: '🍴', label: 'Menu Management' },
-  { to: '/cafeteria/orders', icon: '📋', label: 'Orders', badge: stats?.pending_orders || 0 },
-  { to: '/cafeteria/analytics', icon: '📊', label: 'Analytics' },
-
+    { to: '/cafeteria/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/cafeteria/menu', icon: <UtensilsCrossed size={20} />, label: 'Menu Management', active: true },
+    { to: '/cafeteria/orders', icon: <ClipboardList size={20} />, label: 'Orders' },
+    { to: '/cafeteria/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
   ]
 
   const filtered = menuItems.filter((i) =>
@@ -158,7 +142,7 @@ export default function CafeteriaMenuPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -170,9 +154,10 @@ export default function CafeteriaMenuPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link"><span className="sd-link-icon">❓</span>{sidebarOpen && <span className="sd-link-label">Help & Support</span>}</Link>
-          <Link to="/settings" className="sd-sidebar-link"><span className="sd-link-icon">⚙️</span>{sidebarOpen && <span className="sd-link-label">Settings</span>}</Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}><span className="sd-link-icon">🚪</span>{sidebarOpen && <span className="sd-link-label">Logout</span>}</button>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
+            <span className="sd-link-icon"><LogOut size={20} /></span>
+            {sidebarOpen && <span className="sd-link-label">Logout</span>}
+          </button>
         </div>
       </aside>
 

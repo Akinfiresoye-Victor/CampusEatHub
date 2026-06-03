@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../stores/useAuthStore'
 import {
   getVendorProducts, addVendorProduct, updateVendorProduct,
   toggleVendorProduct, deleteVendorProduct
@@ -9,22 +9,16 @@ import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
-  Pencil, Trash2, CheckCircle, XCircle, Folder, ImageIcon
+  LogOut, Menu, Search, ShoppingCart,
+  Pencil, Trash2, CheckCircle, XCircle, Folder, ImageIcon, AlertTriangle
 } from 'lucide-react'
 
-const DUMMY_PRODUCTS = [
-  { id: 1, name: 'Calculus Textbook', price: 5000, available: true, image: null, category: 'Books' },
-  { id: 2, name: 'Scientific Calculator', price: 3500, available: true, image: null, category: 'Electronics' },
-  { id: 3, name: 'Lecture Notes Bundle', price: 1500, available: false, image: null, category: 'Books' },
-]
-
 export default function VendorPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [products, setProducts] = useState(DUMMY_PRODUCTS)
-  const [loading, setLoading] = useState(false)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editProduct, setEditProduct] = useState(null)
   const [toast, setToast] = useState('')
@@ -77,25 +71,22 @@ export default function VendorPage() {
         if (res.data.success) {
           setProducts((prev) => prev.map((p) => p.id === editProduct.id ? res.data.data : p))
           showToast('Product updated!')
+          setShowModal(false)
+        } else {
+          showToast(res.data.error || 'Failed to update product')
         }
       } else {
         const res = await addVendorProduct(data)
         if (res.data.success) {
           setProducts((prev) => [...prev, res.data.data])
           showToast('Product added!')
+          setShowModal(false)
+        } else {
+          showToast(res.data.error || 'Failed to add product')
         }
       }
-      setShowModal(false)
-    } catch {
-      const dummyProduct = { id: Date.now(), name: form.name, price: Number(form.price), category: form.category, available: true, image: null }
-      if (editProduct) {
-        setProducts((prev) => prev.map((p) => p.id === editProduct.id ? { ...p, ...dummyProduct, id: p.id } : p))
-        showToast('Product updated!')
-      } else {
-        setProducts((prev) => [...prev, dummyProduct])
-        showToast('Product added!')
-      }
-      setShowModal(false)
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to save product.')
     } finally {
       setSaving(false)
     }
@@ -137,7 +128,7 @@ export default function VendorPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -149,15 +140,7 @@ export default function VendorPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>

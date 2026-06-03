@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../stores/useAuthStore'
 import AIChatBubble from '../AIChatBubble'
 
 import {
@@ -22,15 +22,10 @@ import {
 } from 'lucide-react'
 
 export default function StudentDashboard() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -38,88 +33,21 @@ export default function StudentDashboard() {
   }
 
   const sidebarLinks = [
-    {
-      to: '/student/dashboard',
-      icon: <Home size={20} />,
-      label: 'Dashboard',
-      active: true,
-    },
-    {
-      to: '/student/products',
-      icon: <ShoppingBag size={20} />,
-      label: 'All Products',
-    },
-    {
-      to: '/student/cafeterias',
-      icon: <UtensilsCrossed size={20} />,
-      label: 'Cafeterias',
-    },
-    {
-      to: '/student/vendor',
-      icon: <Store size={20} />,
-      label: 'My Shop',
-    },
-    {
-      to: '/student/orders',
-      icon: <Package size={20} />,
-      label: 'My Orders',
-    },
-    {
-      to: '/student/spending',
-      icon: <Wallet size={20} />,
-      label: 'Spending',
-    },
+    { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard', active: true },
+    { to: '/student/products', icon: <ShoppingBag size={20} />, label: 'All Products' },
+    { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
+    { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
+    { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
+    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
   const quickCards = [
-    {
-      to: '/student/products',
-      icon: <ShoppingBag size={24} />,
-      label: 'Browse Products',
-      desc: 'Shop from student vendors',
-      color: '#eef2ff',
-      iconBg: '#4f46e5',
-    },
-    {
-      to: '/student/cafeterias',
-      icon: <UtensilsCrossed size={24} />,
-      label: 'Cafeterias',
-      desc: 'View cafeteria menus',
-      color: '#f0fdf4',
-      iconBg: '#16a34a',
-    },
-    {
-      to: '/student/cart',
-      icon: <ShoppingCart size={24} />,
-      label: 'My Cart',
-      desc: 'View your cart items',
-      color: '#fff7ed',
-      iconBg: '#ea580c',
-    },
-    {
-      to: '/student/orders',
-      icon: <Package size={24} />,
-      label: 'My Orders',
-      desc: 'Track your orders',
-      color: '#fdf2f8',
-      iconBg: '#db2777',
-    },
-    {
-      to: '/student/spending',
-      icon: <Wallet size={24} />,
-      label: 'Spending',
-      desc: 'View spending history',
-      color: '#fefce8',
-      iconBg: '#ca8a04',
-    },
-    {
-      to: '/student/vendor',
-      icon: <Store size={24} />,
-      label: 'My Shop',
-      desc: 'Manage your products',
-      color: '#eff6ff',
-      iconBg: '#2563eb',
-    },
+    { to: '/student/products', icon: <ShoppingBag size={24} />, label: 'Browse Products', desc: 'Shop from student vendors', color: '#eef2ff', iconBg: '#4f46e5' },
+    { to: '/student/cafeterias', icon: <UtensilsCrossed size={24} />, label: 'Cafeterias', desc: 'View cafeteria menus', color: '#f0fdf4', iconBg: '#16a34a' },
+    { to: '/student/cart', icon: <ShoppingCart size={24} />, label: 'My Cart', desc: 'View your cart items', color: '#fff7ed', iconBg: '#ea580c' },
+    { to: '/student/orders', icon: <Package size={24} />, label: 'My Orders', desc: 'Track your orders', color: '#fdf2f8', iconBg: '#db2777' },
+    { to: '/student/spending', icon: <Wallet size={24} />, label: 'Spending', desc: 'View spending history', color: '#fefce8', iconBg: '#ca8a04' },
+    { to: '/student/ai-recommender', icon: <Sparkles size={24} />, label: 'AI Meal Planner', desc: 'Get AI recommendations', color: '#eff6ff', iconBg: '#2563eb' },
   ]
 
   return (
@@ -129,16 +57,12 @@ export default function StudentDashboard() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
 
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`sd-sidebar-link ${link.active ? 'active' : ''}`}
-            >
+            <Link key={link.to} to={link.to} className={`sd-sidebar-link ${link.active ? 'active' : ''}`}>
               <span className="sd-link-icon">{link.icon}</span>
               {sidebarOpen && <span className="sd-link-label">{link.label}</span>}
             </Link>
@@ -147,32 +71,13 @@ export default function StudentDashboard() {
 
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon">
-              <CircleHelp size={20} />
-            </span>
-            {sidebarOpen && (
-              <span className="sd-link-label">Help & Support</span>
-            )}
+          <Link to="/student/ai-recommender" className="sd-sidebar-link">
+            <span className="sd-link-icon"><Sparkles size={20} /></span>
+            {sidebarOpen && <span className="sd-link-label">AI Meal Planner</span>}
           </Link>
-
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon">
-              <Settings size={20} />
-            </span>
-            {sidebarOpen && (
-              <span className="sd-link-label">Settings</span>
-            )}
-          </Link>
-
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
-            <span className="sd-link-icon">
-              <LogOut size={20} />
-            </span>
-            {sidebarOpen && (
-              <span className="sd-link-label">Logout</span>
-            )}
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
+            <span className="sd-link-icon"><LogOut size={20} /></span>
+            {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
         </div>
       </aside>
@@ -182,10 +87,7 @@ export default function StudentDashboard() {
 
         {/* TOP NAVBAR */}
         <header className="sd-topbar">
-          <button
-            className="sd-hamburger"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
+          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
             <Menu size={22} />
           </button>
 
@@ -205,10 +107,6 @@ export default function StudentDashboard() {
               <Package size={20} />
               <small>Orders</small>
             </Link>
-            <Link to="/student/spending" className="sd-top-icon">
-              <Wallet size={20} />
-              <small>Spending</small>
-            </Link>
             <Link to="/student/cart" className="sd-top-icon">
               <ShoppingCart size={20} />
               <small>Cart</small>
@@ -227,15 +125,15 @@ export default function StudentDashboard() {
           <div className="sd-banner">
             <div className="sd-banner-text">
               <h2>Welcome back, <span>{user?.full_name || user?.username || 'Student'}</span> 👋</h2>
-              <p>What would you like to do today?</p>
+              <p>What would you like to eat or buy today?</p>
               <div className="sd-banner-btns">
-                <Link to="/student/products" className="sd-banner-btn primary">
-                  <Sparkles size={18} />
-                  Explore Now
+                <Link to="/student/cafeterias" className="sd-banner-btn primary">
+                  <UtensilsCrossed size={18} />
+                  Browse Cafeterias
                 </Link>
-                <Link to="/student/orders" className="sd-banner-btn outline">
-                  <Package size={18} />
-                  View My Orders
+                <Link to="/student/ai-recommender" className="sd-banner-btn outline">
+                  <Sparkles size={18} />
+                  AI Meal Planner
                 </Link>
               </div>
             </div>
@@ -253,10 +151,7 @@ export default function StudentDashboard() {
           <div className="sd-quick-grid">
             {quickCards.map((card) => (
               <Link to={card.to} key={card.to} className="sd-quick-card" style={{ background: card.color }}>
-                <div
-                  className="sd-quick-icon"
-                  style={{ background: card.iconBg + '22' }}
-                >
+                <div className="sd-quick-icon" style={{ background: card.iconBg + '22' }}>
                   {card.icon}
                 </div>
                 <div className="sd-quick-text">
@@ -274,55 +169,49 @@ export default function StudentDashboard() {
             {/* Recent Activity */}
             <div className="sd-box">
               <div className="sd-box-header">
-                <h3>
-                  <Clock3 size={18} />
-                  Recent Activity
-                </h3>
+                <h3><Clock3 size={18} /> Recent Activity</h3>
               </div>
               <div className="sd-activity-list">
                 <div className="sd-activity-item">
                   <div className="sd-activity-icon green">🛒</div>
                   <div className="sd-activity-text">
-                    <strong>Order placed</strong>
-                    <small>Cafeteria • 2 items</small>
+                    <strong>Browse cafeterias</strong>
+                    <small>Discover available menus today</small>
                   </div>
-                  <span className="sd-activity-time">10 min ago</span>
+                  <Link to="/student/cafeterias" className="sd-activity-time" style={{ color: '#4f46e5', fontSize: '0.75rem' }}>Go →</Link>
                 </div>
                 <div className="sd-activity-item">
-                  <div className="sd-activity-icon purple">💰</div>
+                  <div className="sd-activity-icon purple">🤖</div>
                   <div className="sd-activity-text">
-                    <strong>Payment made</strong>
-                    <small>₦2,500</small>
+                    <strong>AI Meal Recommender</strong>
+                    <small>Get personalized meal suggestions</small>
                   </div>
-                  <span className="sd-activity-time">1 hour ago</span>
+                  <Link to="/student/ai-recommender" className="sd-activity-time" style={{ color: '#4f46e5', fontSize: '0.75rem' }}>Go →</Link>
                 </div>
               </div>
-              <Link to="/student/orders" className="sd-view-all-link">View all activity →</Link>
+              <Link to="/student/orders" className="sd-view-all-link">View all orders →</Link>
             </div>
 
             {/* Quick Stats */}
             <div className="sd-box">
               <div className="sd-box-header">
-                <h3>
-                  <ChartColumn size={18} />
-                  Quick Stats
-                </h3>
+                <h3><ChartColumn size={18} /> Quick Stats</h3>
               </div>
               <div className="sd-stats-grid">
                 <div className="sd-stat-card blue">
                   <span className="sd-stat-icon">🛍️</span>
-                  <strong>—</strong>
-                  <small>Orders</small>
+                  <Link to="/student/orders"><strong>My Orders</strong></Link>
+                  <small>Track status</small>
                 </div>
                 <div className="sd-stat-card green">
                   <span className="sd-stat-icon">💰</span>
-                  <strong>—</strong>
-                  <small>Total Spent</small>
+                  <Link to="/student/spending"><strong>Spending</strong></Link>
+                  <small>View history</small>
                 </div>
                 <div className="sd-stat-card orange">
                   <span className="sd-stat-icon">🏪</span>
-                  <strong>—</strong>
-                  <small>Products Posted</small>
+                  <Link to="/student/vendor"><strong>My Shop</strong></Link>
+                  <small>Manage products</small>
                 </div>
               </div>
             </div>

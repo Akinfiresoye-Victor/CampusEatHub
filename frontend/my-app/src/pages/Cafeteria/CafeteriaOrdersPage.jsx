@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { getCafeteriaOrders, updateOrderStatus } from '../../api/cafeteriaApi'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useCafeteriaStore } from '../../stores/useCafeteriaStore'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
-
-const DUMMY_ORDERS = [
-  { id: 1045, buyer_name: 'Amaka P.', items: [{ name: 'Jollof Rice', quantity: 1 }, { name: 'Chicken', quantity: 1 }], status: 'pending', delivery_type: 'pickup', total: 2500, created_at: '2026-06-03T10:50:00' },
-  { id: 1044, buyer_name: 'John O.', items: [{ name: 'Burger', quantity: 1 }, { name: 'Coke', quantity: 1 }], status: 'processing', delivery_type: 'delivery', total: 1800, created_at: '2026-06-03T10:35:00' },
-  { id: 1043, buyer_name: 'Blessing S.', items: [{ name: 'Fried Rice', quantity: 1 }, { name: 'Plantain', quantity: 2 }], status: 'ready', delivery_type: 'pickup', total: 2000, created_at: '2026-06-03T10:25:00' },
-  { id: 1042, buyer_name: 'David R.', items: [{ name: 'Shawarma', quantity: 2 }], status: 'delivered', delivery_type: 'delivery', total: 1500, created_at: '2026-06-03T09:00:00' },
-  { id: 1041, buyer_name: 'Uche C.', items: [{ name: 'Spaghetti', quantity: 1 }, { name: 'Meatball', quantity: 1 }], status: 'cancelled', delivery_type: 'pickup', total: 2200, created_at: '2026-06-03T08:00:00' },
-]
+import {
+  Home, UtensilsCrossed, ClipboardList, BarChart3,
+  LogOut, Menu, Search, AlertTriangle, CheckCircle, Package
+} from 'lucide-react'
 
 const STATUS_COLORS = {
   pending: { bg: '#fef3c7', color: '#d97706', label: 'Pending' },
@@ -24,24 +20,14 @@ const STATUS_COLORS = {
 const TABS = ['all', 'pending', 'processing', 'ready', 'delivered']
 
 export default function CafeteriaOrdersPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { orders, isLoading, error, fetchOrders, updateOrderStatus } = useCafeteriaStore()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [orders, setOrders] = useState(DUMMY_ORDERS)
   const [activeTab, setActiveTab] = useState('all')
   const [updating, setUpdating] = useState(null)
   const [toast, setToast] = useState('')
   const [search, setSearch] = useState('')
-
-  const fetchOrders = (status) => {
-    getCafeteriaOrders(status === 'all' ? null : status)
-      .then((res) => {
-        if (res.data.success && res.data.data?.length > 0) {
-          setOrders(res.data.data)
-        }
-      })
-      .catch(() => {})
-  }
 
   useEffect(() => {
     fetchOrders(activeTab)
@@ -51,20 +37,15 @@ export default function CafeteriaOrdersPage() {
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     setUpdating(orderId)
-    try {
-      const res = await updateOrderStatus(orderId, newStatus)
-      if (res.data.success) {
-        setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o))
-        setToast(`Order #${orderId} updated to ${newStatus}!`)
-        setTimeout(() => setToast(''), 3000)
-      }
-    } catch {
-      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o))
-      setToast(`Order #${orderId} updated!`)
+    const result = await updateOrderStatus(orderId, newStatus)
+    if (result.success) {
+      setToast(`Order #${orderId} updated to ${newStatus}!`)
       setTimeout(() => setToast(''), 3000)
-    } finally {
-      setUpdating(null)
+    } else {
+      setToast(result.error || `Failed to update order #${orderId}`)
+      setTimeout(() => setToast(''), 3000)
     }
+    setUpdating(null)
   }
 
   const handleLogout = async () => {
@@ -81,11 +62,11 @@ export default function CafeteriaOrdersPage() {
   }
 
   const sidebarLinks = [
-  { to: '/cafeteria/dashboard', icon: '🏠', label: 'Dashboard', active: true }, // change active per page
-  { to: '/cafeteria/menu', icon: '🍴', label: 'Menu Management' },
-  { to: '/cafeteria/orders', icon: '📋', label: 'Orders', badge: stats?.pending_orders || 0 },
-  { to: '/cafeteria/analytics', icon: '📊', label: 'Analytics' },
-]
+    { to: '/cafeteria/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/cafeteria/menu', icon: <UtensilsCrossed size={20} />, label: 'Menu Management' },
+    { to: '/cafeteria/orders', icon: <ClipboardList size={20} />, label: 'Orders', active: true },
+    { to: '/cafeteria/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
+  ]
 
   const filtered = activeTab === 'all' ? orders : orders.filter((o) => o.status === activeTab)
 
@@ -94,7 +75,7 @@ export default function CafeteriaOrdersPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -106,9 +87,10 @@ export default function CafeteriaOrdersPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link"><span className="sd-link-icon">❓</span>{sidebarOpen && <span className="sd-link-label">Help & Support</span>}</Link>
-          <Link to="/settings" className="sd-sidebar-link"><span className="sd-link-icon">⚙️</span>{sidebarOpen && <span className="sd-link-label">Settings</span>}</Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}><span className="sd-link-icon">🚪</span>{sidebarOpen && <span className="sd-link-label">Logout</span>}</button>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
+            <span className="sd-link-icon"><LogOut size={20} /></span>
+            {sidebarOpen && <span className="sd-link-label">Logout</span>}
+          </button>
         </div>
       </aside>
 
@@ -152,8 +134,22 @@ export default function CafeteriaOrdersPage() {
             ))}
           </div>
 
+          {isLoading && (
+            <div className="pp-state">
+              <div className="pp-spinner" />
+              <p>Loading orders...</p>
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div className="pp-state error">
+              <AlertTriangle size={48} />
+              <p>{error}</p>
+            </div>
+          )}
+
           {/* EMPTY */}
-          {filtered.length === 0 && (
+          {!isLoading && !error && filtered.length === 0 && (
             <div className="pp-state">
               <p>📋 No {activeTab === 'all' ? '' : activeTab} orders found.</p>
             </div>
@@ -240,7 +236,6 @@ export default function CafeteriaOrdersPage() {
         </div>
       </div>
 
-      <AIChatBubble />
     </div>
   )
 }

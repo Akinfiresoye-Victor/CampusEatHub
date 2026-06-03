@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { getOrder } from '../../api/ordersApi'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
-  Clock, Cog, CheckCircle, Truck, XCircle, RefreshCw
+  LogOut, Menu, Search, ShoppingCart,
+  Clock, Cog, CheckCircle, Truck, XCircle, RefreshCw, AlertTriangle
 } from 'lucide-react'
 
 const STATUS_CONFIG = {
@@ -18,50 +18,22 @@ const STATUS_CONFIG = {
   cancelled:  { bg: '#fee2e2', color: '#dc2626', label: 'Cancelled',  icon: <XCircle size={13} /> },
 }
 
-const DUMMY_ORDER = {
-  id: 1,
-  seller_name: "Mama Nkechi's Kitchen",
-  created_at: '2026-06-03T10:00:00',
-  total: 3200,
-  delivery_type: 'pickup',
-  status: 'pending',
-  delivery_fee: 0,
-  items: [
-    { id: 1, name: 'Jollof Rice & Chicken', category: 'Lunch', price: 1500, quantity: 1 },
-    { id: 2, name: 'Chapman Drink', category: 'Beverages', price: 600, quantity: 2 },
-    { id: 3, name: 'Moi Moi', category: 'Snacks', price: 500, quantity: 1 },
-  ]
-}
-
 export default function OrderDetailPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { currentOrder: order, isLoading, error, fetchOrder } = useOrderStore()
   const navigate = useNavigate()
   const { id } = useParams()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [order, setOrder] = useState(DUMMY_ORDER)
-  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    setLoading(true)
-    getOrder(id)
-      .then((res) => { if (res.data.success) setOrder(res.data.data) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-
+    fetchOrder(id)
     const interval = setInterval(() => {
-      getOrder(id)
-        .then((res) => { if (res.data.success) setOrder(res.data.data) })
-        .catch(() => {})
+      fetchOrder(id)
     }, 30000)
 
     return () => clearInterval(interval)
   }, [id])
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
 
   const sidebarLinks = [
     { to: '/student/dashboard',  icon: <Home size={20} />,           label: 'Dashboard' },
@@ -72,8 +44,8 @@ export default function OrderDetailPage() {
     { to: '/student/spending',   icon: <Wallet size={20} />,          label: 'Spending' },
   ]
 
-  const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
-  const subtotal = order.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0
+  const status = order ? STATUS_CONFIG[order.status] || STATUS_CONFIG.pending : null
+  const subtotal = order?.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0
 
   const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-NG', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -87,7 +59,7 @@ export default function OrderDetailPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -99,15 +71,7 @@ export default function OrderDetailPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -140,18 +104,34 @@ export default function OrderDetailPage() {
 
           <Link to="/student/orders" className="cm-back">← Back to Orders</Link>
 
-          <div className="pp-header">
-            <div>
-              <h2>Order #{order.id}</h2>
-              <p>{formatDate(order.created_at)}</p>
+          {isLoading && (
+            <div className="pp-state">
+              <div className="pp-spinner" />
+              <p>Loading order details...</p>
             </div>
-            <span
-              className="order-status-badge"
-              style={{ background: status.bg, color: status.color, fontSize: '1rem', padding: '8px 18px', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              {status.icon} {status.label}
-            </span>
-          </div>
+          )}
+
+          {!isLoading && error && (
+            <div className="pp-state error">
+              <AlertTriangle size={48} />
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!isLoading && !error && order && (
+            <>
+              <div className="pp-header">
+                <div>
+                  <h2>Order #{order.id}</h2>
+                  <p>{formatDate(order.created_at)}</p>
+                </div>
+                <span
+                  className="order-status-badge"
+                  style={{ background: status?.bg, color: status?.color, fontSize: '1rem', padding: '8px 18px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {status?.icon} {status?.label}
+                </span>
+              </div>
 
           <div className="co-body">
             <div className="co-left">
@@ -230,6 +210,8 @@ export default function OrderDetailPage() {
               <Link to="/student/orders" className="co-back-btn" style={{ marginTop: '20px' }}>← Back to all orders</Link>
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
 

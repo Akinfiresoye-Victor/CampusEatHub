@@ -1,45 +1,25 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { getSpending } from '../../api/ordersApi'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
-  CreditCard, BarChart3
+  LogOut, Menu, Search, ShoppingCart,
+  CreditCard, BarChart3, AlertTriangle
 } from 'lucide-react'
 
-const DUMMY_SPENDING = {
-  total_spent: 45200,
-  total_orders: 12,
-  breakdown: [
-    { seller_name: "Mama Nkechi's Kitchen", total: 28500 },
-    { seller_name: "Campus Bites", total: 12700 },
-    { seller_name: "Student Vendor - Alex", total: 4000 },
-  ]
-}
-
 export default function SpendingPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { spending, isLoading, error, fetchSpending } = useOrderStore()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [spending, setSpending] = useState(DUMMY_SPENDING)
-  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    setLoading(true)
-    getSpending()
-      .then((res) => { if (res.data.success) setSpending(res.data.data) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    fetchSpending()
   }, [])
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
 
   const sidebarLinks = [
     { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
@@ -50,7 +30,7 @@ export default function SpendingPage() {
     { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending', active: true },
   ]
 
-  const sorted = [...(spending.breakdown || [])].sort((a, b) => b.total - a.total)
+  const sorted = [...(spending?.breakdown || [])].sort((a, b) => b.total - a.total)
 
   return (
     <div className="sd-layout">
@@ -58,7 +38,7 @@ export default function SpendingPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -70,15 +50,7 @@ export default function SpendingPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -114,32 +86,48 @@ export default function SpendingPage() {
             </div>
           </div>
 
-          <div className="sp-stats-row">
-            <div className="sp-stat-card">
-              <div className="sp-stat-icon"><Wallet size={24} /></div>
-              <div>
-                <h3>{formatNaira(spending.total_spent)}</h3>
-                <p>Total Spent</p>
-              </div>
+          {isLoading && (
+            <div className="pp-state">
+              <div className="pp-spinner" />
+              <p>Loading spending data...</p>
             </div>
-            <div className="sp-stat-card">
-              <div className="sp-stat-icon"><Package size={24} /></div>
-              <div>
-                <h3>{spending.total_orders}</h3>
-                <p>Total Orders</p>
-              </div>
-            </div>
-            <div className="sp-stat-card">
-              <div className="sp-stat-icon"><BarChart3 size={24} /></div>
-              <div>
-                <h3>{spending.total_orders > 0 ? formatNaira(Math.round(spending.total_spent / spending.total_orders)) : '₦0'}</h3>
-                <p>Avg. Per Order</p>
-              </div>
-            </div>
-          </div>
+          )}
 
-          <div className="co-box" style={{ marginTop: '25px' }}>
-            <h3><CreditCard size={18} /> Spending by Seller</h3>
+          {!isLoading && error && (
+            <div className="pp-state error">
+              <AlertTriangle size={48} />
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!isLoading && !error && spending && (
+            <>
+              <div className="sp-stats-row">
+                <div className="sp-stat-card">
+                  <div className="sp-stat-icon"><Wallet size={24} /></div>
+                  <div>
+                    <h3>{formatNaira(spending.total_spent)}</h3>
+                    <p>Total Spent</p>
+                  </div>
+                </div>
+                <div className="sp-stat-card">
+                  <div className="sp-stat-icon"><Package size={24} /></div>
+                  <div>
+                    <h3>{spending.total_orders}</h3>
+                    <p>Total Orders</p>
+                  </div>
+                </div>
+                <div className="sp-stat-card">
+                  <div className="sp-stat-icon"><BarChart3 size={24} /></div>
+                  <div>
+                    <h3>{spending.total_orders > 0 ? formatNaira(Math.round(spending.total_spent / spending.total_orders)) : '₦0'}</h3>
+                    <p>Avg. Per Order</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="co-box" style={{ marginTop: '25px' }}>
+                <h3><CreditCard size={18} /> Spending by Seller</h3>
 
             {sorted.length === 0 && (
               <div className="pp-state"><p>No spending data yet.</p></div>
@@ -168,6 +156,8 @@ export default function SpendingPage() {
               )
             })}
           </div>
+          </>
+          )}
         </div>
       </div>
 

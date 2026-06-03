@@ -1,23 +1,23 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { getCart } from '../../api/cartApi'
-import { checkout } from '../../api/ordersApi'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useCartStore } from '../../stores/useCartStore'
+import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
+  LogOut, Menu, Search, ShoppingCart,
   Truck, MapPin, Lock, AlertTriangle, CheckCircle
 } from 'lucide-react'
 
 export default function CheckoutPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { items, sellerName, isLoading: cartLoading, fetchCart } = useCartStore()
+  const { checkout } = useOrderStore()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [cart, setCart] = useState({ items: [], seller_name: '' })
-  const [loading, setLoading] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -27,40 +27,23 @@ export default function CheckoutPage() {
   const deliveryLocation = location.state?.deliveryLocation || ''
 
   useEffect(() => {
-    setLoading(true)
-    getCart()
-      .then((res) => { if (res.data.success) setCart(res.data.data) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    fetchCart()
   }, [])
 
-  const subtotal = cart.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 3200
+  const subtotal = items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0
   const total = deliveryType === 'delivery' ? subtotal + DELIVERY_FEE : subtotal
 
   const handlePlaceOrder = async () => {
     setError('')
     setPlacing(true)
-    try {
-      const res = await checkout({
-        delivery_type: deliveryType,
-        ...(deliveryType === 'delivery' && { delivery_location: deliveryLocation }),
-      })
-      if (res.data.success) {
-        const orderId = res.data.data?.id
-        navigate(orderId ? `/student/orders/${orderId}` : '/student/orders', { state: { success: true } })
-      } else {
-        setError(res.data.error)
-      }
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to place order. Please try again.')
-    } finally {
-      setPlacing(false)
+    const result = await checkout(deliveryType)
+    if (result.success) {
+      const orderId = result.data?.id
+      navigate(orderId ? `/student/orders/${orderId}` : '/student/orders', { state: { success: true } })
+    } else {
+      setError(result.error)
     }
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
+    setPlacing(false)
   }
 
   const sidebarLinks = [
@@ -72,11 +55,7 @@ export default function CheckoutPage() {
     { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
-  const displayItems = cart.items?.length > 0 ? cart.items : [
-    { id: 1, name: 'Jollof Rice & Chicken', category: 'Lunch', price: 1500, quantity: 1 },
-    { id: 2, name: 'Chapman Drink', category: 'Beverages', price: 600, quantity: 2 },
-    { id: 3, name: 'Moi Moi', category: 'Snacks', price: 500, quantity: 1 },
-  ]
+  const displayItems = items || []
 
   return (
     <div className="sd-layout">
@@ -84,7 +63,7 @@ export default function CheckoutPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -96,15 +75,7 @@ export default function CheckoutPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -154,7 +125,11 @@ export default function CheckoutPage() {
             <div className="co-left">
               <div className="co-box">
                 <h3><Package size={18} /> Order Items</h3>
-                {displayItems.map((item) => (
+                {cartLoading ? (
+                  <div className="pp-state"><div className="pp-spinner" /><p>Loading cart...</p></div>
+                ) : displayItems.length === 0 ? (
+                  <div className="pp-state"><p>No items in cart</p></div>
+                ) : displayItems.map((item) => (
                   <div key={item.id} className="co-item">
                     <div className="co-item-img">
                       {item.image
@@ -200,7 +175,7 @@ export default function CheckoutPage() {
                   )}
                   <div className="co-delivery-row">
                     <span>Seller</span>
-                    <span>{cart.seller_name || "Mama Nkechi's Kitchen"}</span>
+                    <span>{sellerName || "Seller"}</span>
                   </div>
                 </div>
               </div>

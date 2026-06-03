@@ -1,48 +1,43 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useCartStore } from '../../stores/useCartStore'
 import { getProducts } from '../../api/productsApi'
-import { addToCart } from '../../api/cartApi'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
+  LogOut, Menu, Search, ShoppingCart,
   Heart, Star, AlertTriangle
 } from 'lucide-react'
 
-const DUMMY_PRODUCTS = [
-  { id: 1, name: 'Calculus Textbook (3rd Ed)', price: 4500, category: 'Books & Notes', condition: 'Like New', seller_name: 'Tunde A.', rating: 4.5, image: null },
-  { id: 2, name: 'Scientific Calculator (Casio fx-991)', price: 3200, category: 'Electronics', condition: 'New', seller_name: 'Chioma V.', rating: 5.0, image: null },
-  { id: 3, name: 'Engineering Drawing Set', price: 1800, category: 'Stationery', condition: 'New', seller_name: 'Emeka O.', rating: 4.0, image: null },
-  { id: 4, name: 'Organic Chemistry Lecture Notes', price: 800, category: 'Books & Notes', condition: 'Used', seller_name: 'Amara I.', rating: 3.5, image: null },
-  { id: 5, name: 'Laptop Bag (15 inch)', price: 2500, category: 'Others', condition: 'New', seller_name: 'Segun B.', rating: 4.8, image: null },
-  { id: 6, name: 'EU Branded Hoodie (L)', price: 5000, category: 'Clothing', condition: 'New', seller_name: 'Fatima K.', rating: 4.2, image: null },
-  { id: 7, name: 'Graph Book Bundle (5 pcs)', price: 600, category: 'Stationery', condition: 'New', seller_name: 'Dayo M.', rating: 4.0, image: null },
-  { id: 8, name: 'Introduction to Programming (PDF + Print)', price: 1200, category: 'Books & Notes', condition: 'Like New', seller_name: 'Ngozi P.', rating: 4.7, image: null },
-]
-
 export default function ProductsPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { addItem, sellerLockError, clearSellerLockError, clearCart } = useCartStore()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [products, setProducts] = useState(DUMMY_PRODUCTS)
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [addingId, setAddingId] = useState(null)
   const [toast, setToast] = useState('')
   const [cartError, setCartError] = useState('')
   const [activeCategories, setActiveCategories] = useState(['All Categories'])
-  const [activeConditions, setActiveConditions] = useState([])
   const [sort, setSort] = useState('Newest First')
 
   useEffect(() => {
     getProducts()
       .then((res) => {
-        if (res.data.success && res.data.data?.length > 0) setProducts(res.data.data)
+        if (res.data.success) {
+          setProducts(res.data.data)
+        } else {
+          setError(res.data.error || 'Failed to load products.')
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        setError('Failed to load products. Please try again.')
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -50,22 +45,23 @@ export default function ProductsPage() {
     setAddingId(productId)
     setCartError('')
     setToast('')
-    try {
-      const res = await addToCart({ product_id: productId, quantity: 1 })
-      if (res.data.success) {
-        setToast('Added to cart!')
-        setTimeout(() => setToast(''), 3000)
-      } else {
-        setCartError(res.data.error)
-      }
-    } catch (err) {
-      setCartError(err.response?.data?.error || 'Failed to add to cart.')
-    } finally {
-      setAddingId(null)
+    const result = await addItem(productId, 1)
+    if (result.success) {
+      setToast('Added to cart! 🛒')
+      setTimeout(() => setToast(''), 3000)
+    } else {
+      setCartError(result.error || 'Failed to add to cart.')
     }
+    setAddingId(null)
   }
 
-  const handleLogout = async () => { await logout(); navigate('/login') }
+  const handleClearAndRetry = async (productId) => {
+    await clearCart()
+    setCartError('')
+    clearSellerLockError()
+    if (productId) handleAddToCart(productId)
+  }
+
   const handleSearch = (e) => e.preventDefault()
 
   const toggleCategory = (cat) => {
@@ -82,30 +78,22 @@ export default function ProductsPage() {
     }
   }
 
-  const toggleCondition = (cond) => {
-    setActiveConditions((prev) =>
-      prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
-    )
-  }
-
   const clearFilters = () => {
     setActiveCategories(['All Categories'])
-    setActiveConditions([])
   }
 
   const sidebarLinks = [
-    { to: '/student/dashboard',  icon: <Home size={20} />,           label: 'Dashboard' },
-    { to: '/student/products',   icon: <ShoppingBag size={20} />,    label: 'All Products', active: true },
+    { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/student/products', icon: <ShoppingBag size={20} />, label: 'All Products', active: true },
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
-    { to: '/student/vendor',     icon: <Store size={20} />,           label: 'My Shop' },
-    { to: '/student/orders',     icon: <Package size={20} />,         label: 'My Orders' },
-    { to: '/student/spending',   icon: <Wallet size={20} />,          label: 'Spending' },
+    { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
+    { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
+    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
   const filteredProducts = products
     .filter((p) => p.name?.toLowerCase().includes(search.toLowerCase()))
     .filter((p) => activeCategories.includes('All Categories') || activeCategories.includes(p.category))
-    .filter((p) => activeConditions.length === 0 || activeConditions.includes(p.condition))
     .sort((a, b) => {
       if (sort === 'Price: Low to High') return a.price - b.price
       if (sort === 'Price: High to Low') return b.price - a.price
@@ -118,7 +106,7 @@ export default function ProductsPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -130,15 +118,7 @@ export default function ProductsPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -180,13 +160,7 @@ export default function ProductsPage() {
           {cartError && (
             <div className="pp-cart-error">
               <span><AlertTriangle size={16} /> {cartError}</span>
-              <button onClick={async () => {
-                const { clearCart } = await import('../../api/cartApi')
-                await clearCart()
-                setCartError('')
-                setToast('Cart cleared!')
-                setTimeout(() => setToast(''), 3000)
-              }}>Clear Cart</button>
+              <button onClick={() => handleClearAndRetry()}>Clear Cart</button>
             </div>
           )}
 
@@ -198,7 +172,7 @@ export default function ProductsPage() {
               </div>
               <div className="pp-filter-section">
                 <h4>Category <span>▲</span></h4>
-                {['All Categories', 'Books & Notes', 'Electronics', 'Stationery', 'Clothing', 'Others'].map((cat) => (
+                {['All Categories', 'Books & Notes', 'Electronics', 'Stationery', 'Clothing', 'Food', 'Others'].map((cat) => (
                   <label key={cat} className="pp-checkbox">
                     <input
                       type="checkbox"
@@ -209,27 +183,13 @@ export default function ProductsPage() {
                   </label>
                 ))}
               </div>
-              <div className="pp-filter-section">
-                <h4>Condition <span>▲</span></h4>
-                {['New', 'Like New', 'Used'].map((cond) => (
-                  <label key={cond} className="pp-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={activeConditions.includes(cond)}
-                      onChange={() => toggleCondition(cond)}
-                    />
-                    {cond}
-                  </label>
-                ))}
-              </div>
-              <button className="pp-apply-btn"><Search size={15} /> Apply Filters</button>
             </aside>
 
             <div className="pp-products-area">
               <div className="pp-toolbar">
                 <span className="pp-count">Showing <b>{filteredProducts.length}</b> products</span>
                 <select className="pp-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
-                  <option>Sort by: Newest First</option>
+                  <option>Newest First</option>
                   <option>Price: Low to High</option>
                   <option>Price: High to Low</option>
                 </select>
@@ -246,6 +206,7 @@ export default function ProductsPage() {
                 <div className="pp-state error">
                   <AlertTriangle size={32} />
                   <p>{error}</p>
+                  <button className="pp-add-btn" onClick={() => window.location.reload()} style={{ marginTop: '10px' }}>Try Again</button>
                 </div>
               )}
 
@@ -270,7 +231,6 @@ export default function ProductsPage() {
                             {product.condition}
                           </span>
                         )}
-                        <button className="pp-wishlist"><Heart size={16} /></button>
                       </div>
                       <div className="pp-card-body">
                         <h4>{product.name}</h4>

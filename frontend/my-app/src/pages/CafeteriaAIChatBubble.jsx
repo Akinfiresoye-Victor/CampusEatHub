@@ -60,7 +60,7 @@ export default function CafeteriaAIChatBubble() {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
-          system: `You are the CampusConnect AI Assistant for a cafeteria owner at Elizade University, Ilara-Mokin, Ondo State, Nigeria.
+          system: `You are the ByteNBite AI Assistant for a cafeteria owner at Elizade University, Ilara-Mokin, Ondo State, Nigeria.
 
 You help cafeteria owners with:
 - 📦 Tracking and managing incoming orders (pending, processing, ready, delivered)

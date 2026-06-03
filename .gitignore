@@ -40,3 +40,6 @@ Thumbs.db
 # Environment files
 .env
 .env.local
+
+# RubberDuck indexer config (contains auth token)
+.rubberduck/

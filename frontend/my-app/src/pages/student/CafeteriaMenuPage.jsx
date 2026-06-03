@@ -1,34 +1,28 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useCartStore } from '../../stores/useCartStore'
 import { getCafeteriaMenu } from '../../api/productsApi'
-import { addToCart } from '../../api/cartApi'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
+  LogOut, Menu, Search, ShoppingCart,
   CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react'
-
-const DUMMY_MENU = [
-  { id: 1, name: 'Jollof Rice & Chicken', price: 1500, available: true, category: 'Lunch' },
-  { id: 2, name: 'Fried Rice & Turkey', price: 1800, available: true, category: 'Lunch' },
-  { id: 3, name: 'Pounded Yam & Egusi', price: 2000, available: false, category: 'Dinner' },
-  { id: 4, name: 'Moi Moi', price: 500, available: true, category: 'Snacks' },
-  { id: 5, name: 'Chapman Drink', price: 600, available: true, category: 'Beverages' },
-  { id: 6, name: 'Indomie & Egg', price: 800, available: false, category: 'Breakfast' },
-]
 
 const CATEGORIES = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Beverages']
 
 export default function CafeteriaMenuPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { addItem, sellerLockError, clearSellerLockError, clearCart } = useCartStore()
   const navigate = useNavigate()
   const { id } = useParams()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [menuItems, setMenuItems] = useState(DUMMY_MENU)
-  const [loading, setLoading] = useState(false)
+  const [menuItems, setMenuItems] = useState([])
+  const [cafeteriaName, setCafeteriaName] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [addingId, setAddingId] = useState(null)
   const [toast, setToast] = useState('')
@@ -39,9 +33,17 @@ export default function CafeteriaMenuPage() {
     setLoading(true)
     getCafeteriaMenu(id)
       .then((res) => {
-        if (res.data.success && res.data.data.length > 0) setMenuItems(res.data.data)
+        if (res.data.success) {
+          setMenuItems(res.data.data)
+          // Try to get cafeteria name from first item or data
+          if (res.data.cafeteria_name) setCafeteriaName(res.data.cafeteria_name)
+        } else {
+          setError(res.data.error || 'Failed to load menu.')
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        setError('Failed to load menu. Please try again.')
+      })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -49,24 +51,22 @@ export default function CafeteriaMenuPage() {
     setAddingId(productId)
     setCartError('')
     setToast('')
-    try {
-      const res = await addToCart({ product_id: productId, quantity: 1 })
-      if (res.data.success) {
-        setToast('Added to cart!')
-        setTimeout(() => setToast(''), 3000)
-      } else {
-        setCartError(res.data.error)
-      }
-    } catch (err) {
-      setCartError(err.response?.data?.error || 'Failed to add to cart.')
-    } finally {
-      setAddingId(null)
+    const result = await addItem(productId, 1)
+    if (result.success) {
+      setToast('Added to cart! 🛒')
+      setTimeout(() => setToast(''), 3000)
+    } else {
+      setCartError(result.error || 'Failed to add to cart.')
     }
+    setAddingId(null)
   }
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
+  const handleClearCart = async () => {
+    await clearCart()
+    clearSellerLockError()
+    setCartError('')
+    setToast('Cart cleared!')
+    setTimeout(() => setToast(''), 3000)
   }
 
   const sidebarLinks = [
@@ -94,7 +94,7 @@ export default function CafeteriaMenuPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -106,15 +106,7 @@ export default function CafeteriaMenuPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -151,7 +143,7 @@ export default function CafeteriaMenuPage() {
               <div className="cm-hero-logo"><UtensilsCrossed size={32} /></div>
               <div>
                 <div className="cm-hero-badge">Open</div>
-                <h2>Cafeteria Menu</h2>
+                <h2>{cafeteriaName || 'Cafeteria Menu'}</h2>
               </div>
             </div>
             <div className="cm-hero-bg" />
@@ -162,13 +154,7 @@ export default function CafeteriaMenuPage() {
           {cartError && (
             <div className="pp-cart-error">
               <span><AlertTriangle size={16} /> {cartError}</span>
-              <button onClick={async () => {
-                const { clearCart } = await import('../../api/cartApi')
-                await clearCart()
-                setCartError('')
-                setToast('Cart cleared!')
-                setTimeout(() => setToast(''), 3000)
-              }}>Clear Cart</button>
+              <button onClick={handleClearCart}>Clear Cart</button>
             </div>
           )}
 
@@ -187,7 +173,14 @@ export default function CafeteriaMenuPage() {
             </div>
           )}
 
-          {!loading && available.length > 0 && (
+          {!loading && error && (
+            <div className="pp-state error">
+              <AlertTriangle size={48} />
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && available.length > 0 && (
             <>
               <h3 className="cm-section-title"><CheckCircle size={18} /> Available Now</h3>
               <div className="cm-grid">
@@ -204,7 +197,7 @@ export default function CafeteriaMenuPage() {
                       <p className="cm-category">{item.category}</p>
                       <p className="cm-price">{formatNaira(item.price)}</p>
                       <button className="cm-add-btn" onClick={() => handleAddToCart(item.id)} disabled={addingId === item.id}>
-                        {addingId === item.id ? 'Adding...' : '+ Add'}
+                        {addingId === item.id ? 'Adding...' : '+ Add to Cart'}
                       </button>
                     </div>
                   </div>
@@ -213,15 +206,15 @@ export default function CafeteriaMenuPage() {
             </>
           )}
 
-          {!loading && unavailable.length > 0 && (
+          {!loading && !error && unavailable.length > 0 && (
             <>
-              <h3 className="cm-section-title"><XCircle size={18} /> Not Available Today</h3>
+              <h3 className="cm-section-title" style={{ color: '#6b7280' }}><XCircle size={18} /> Not Available Today</h3>
               <div className="cm-grid">
                 {unavailable.map((item) => (
                   <div key={item.id} className="cm-card unavailable">
                     <div className="cm-card-img">
                       {item.image
-                        ? <img src={item.image} alt={item.name} />
+                        ? <img src={item.image} alt={item.name} style={{ opacity: 0.5 }} />
                         : <div className="cm-img-placeholder"><UtensilsCrossed size={32} /></div>
                       }
                       <div className="cm-unavailable-overlay">Not Available Today</div>
@@ -238,7 +231,7 @@ export default function CafeteriaMenuPage() {
             </>
           )}
 
-          {!loading && filtered.length === 0 && (
+          {!loading && !error && filtered.length === 0 && (
             <div className="pp-state">
               <UtensilsCrossed size={48} />
               <p>No menu items found.</p>

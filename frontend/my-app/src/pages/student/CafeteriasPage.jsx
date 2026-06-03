@@ -1,39 +1,34 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuthStore } from '../../stores/useAuthStore'
 import { getCafeterias } from '../../api/productsApi'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart, Heart
+  LogOut, Menu, Search, ShoppingCart, AlertTriangle
 } from 'lucide-react'
 
-const DUMMY_CAFETERIAS = [
-  { id: 1, name: "Mama Nkechi's Kitchen", image: null, status: 'Open' },
-  { id: 2, name: "Campus Bites", image: null, status: 'Open' },
-]
-
 export default function CafeteriasPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [cafeterias, setCafeterias] = useState(DUMMY_CAFETERIAS)
-  const [loading, setLoading] = useState(false)
+  const [cafeterias, setCafeterias] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     getCafeterias()
       .then((res) => {
-        if (res.data.success && res.data.data.length > 0) setCafeterias(res.data.data)
+        if (res.data.success) {
+          setCafeterias(res.data.data)
+        } else {
+          setError(res.data.error || 'Failed to load cafeterias.')
+        }
       })
-      .catch(() => {})
+      .catch(() => setError('Failed to load cafeterias. Please try again.'))
       .finally(() => setLoading(false))
   }, [])
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
 
   const sidebarLinks = [
     { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
@@ -52,7 +47,7 @@ export default function CafeteriasPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -64,15 +59,7 @@ export default function CafeteriasPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -122,7 +109,15 @@ export default function CafeteriasPage() {
             </div>
           )}
 
-          {!loading && (
+          {!loading && error && (
+            <div className="pp-state error">
+              <AlertTriangle size={48} />
+              <p>{error}</p>
+              <button className="pp-add-btn" onClick={() => window.location.reload()} style={{ marginTop: '10px' }}>Try Again</button>
+            </div>
+          )}
+
+          {!loading && !error && (
             <div className="cf-grid">
               {filtered.map((cafe) => (
                 <Link to={`/student/cafeteria/${cafe.id}`} key={cafe.id} className="cf-card">
@@ -131,15 +126,10 @@ export default function CafeteriasPage() {
                       ? <img src={cafe.image} alt={cafe.name} />
                       : <div className="cf-img-placeholder"><UtensilsCrossed size={36} /></div>
                     }
-                    <span className={`cf-status ${cafe.status?.toLowerCase() === 'open' ? 'open' : 'closed'}`}>
-                      {cafe.status || 'Open'}
-                    </span>
-                    <button className="pp-wishlist" onClick={(e) => e.preventDefault()}>
-                      <Heart size={16} />
-                    </button>
+                    <span className="cf-status open">Open</span>
                   </div>
                   <div className="cf-card-body">
-                    <h4>{cafe.name}</h4>
+                    <h4>{cafe.name || cafe.username}</h4>
                     <button className="cf-menu-btn">View Menu →</button>
                   </div>
                 </Link>
@@ -147,7 +137,7 @@ export default function CafeteriasPage() {
             </div>
           )}
 
-          {!loading && filtered.length === 0 && (
+          {!loading && !error && filtered.length === 0 && (
             <div className="pp-state">
               <UtensilsCrossed size={48} />
               <p>No cafeterias found.</p>

@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from './stores/useAuthStore'
+
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import StudentDashboard from './pages/student/StudentDashboard'
@@ -11,21 +14,62 @@ import OrdersPage from './pages/student/OrdersPage'
 import OrderDetailPage from './pages/student/OrderDetailPage'
 import SpendingPage from './pages/student/SpendingPage'
 import VendorPage from './pages/student/VendorPage'
+import AIRecommenderPage from './pages/student/AIRecommenderPage'
 import CafeteriaDashboard from './pages/cafeteria/CafeteriaDashboard'
 import CafeteriaOrdersPage from './pages/cafeteria/CafeteriaOrdersPage'
 import CafeteriaMenuManagePage from './pages/cafeteria/CafeteriaMenuPage'
 
-// ProtectedRoute temporarily disabled for frontend development
-function ProtectedRoute({ children }) {
+function FullPageSpinner() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+      gap: '20px',
+    }}>
+      <img src="/elizade.png" alt="ByteNBite" style={{ width: 72, height: 72, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.3)' }} />
+      <div style={{
+        width: 48, height: 48,
+        border: '4px solid rgba(255,255,255,0.3)',
+        borderTop: '4px solid white',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', fontWeight: 500 }}>Loading ByteNBite...</p>
+    </div>
+  )
+}
+
+// ProtectedRoute with role checking
+function ProtectedRoute({ children, requiredRole }) {
+  const { user, isLoading } = useAuthStore()
+
+  if (isLoading) return <FullPageSpinner />
+  if (!user) return <Navigate to="/login" replace />
+
+  // Role enforcement
+  if (requiredRole && user.role !== requiredRole) {
+    if (user.role === 'student') return <Navigate to="/student/dashboard" replace />
+    if (user.role === 'cafeteria') return <Navigate to="/cafeteria/dashboard" replace />
+    return <Navigate to="/login" replace />
+  }
+
   return children
 }
 
-// Placeholder page component
-function Page({ name }) {
-  return <div style={{ padding: '2rem', fontSize: '1.5rem', color: '#4f46e5' }}>{name} — Coming Soon</div>
-}
-
 export default function App() {
+  const { checkSession, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    checkSession()
+  }, [])
+
+  if (isLoading) return <FullPageSpinner />
+
   return (
     <Routes>
       {/* Public */}
@@ -34,30 +78,22 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
 
       {/* Student */}
-      <Route path="/student/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-      <Route path="/student/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
-      <Route path="/student/cafeterias" element={<ProtectedRoute><CafeteriasPage /></ProtectedRoute>} />
-      <Route path="/student/cafeteria/:id" element={<ProtectedRoute><CafeteriaMenuPage /></ProtectedRoute>} />
-      <Route path="/student/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-      <Route path="/student/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-      <Route path="/student/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-      <Route path="/student/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
-      <Route path="/student/spending" element={<ProtectedRoute><SpendingPage /></ProtectedRoute>} />
-      <Route path="/student/vendor" element={<ProtectedRoute><VendorPage /></ProtectedRoute>} />
-      <Route path="/student/ai-recommender" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+      <Route path="/student/dashboard" element={<ProtectedRoute requiredRole="student"><StudentDashboard /></ProtectedRoute>} />
+      <Route path="/student/products" element={<ProtectedRoute requiredRole="student"><ProductsPage /></ProtectedRoute>} />
+      <Route path="/student/cafeterias" element={<ProtectedRoute requiredRole="student"><CafeteriasPage /></ProtectedRoute>} />
+      <Route path="/student/cafeteria/:id" element={<ProtectedRoute requiredRole="student"><CafeteriaMenuPage /></ProtectedRoute>} />
+      <Route path="/student/cart" element={<ProtectedRoute requiredRole="student"><CartPage /></ProtectedRoute>} />
+      <Route path="/student/checkout" element={<ProtectedRoute requiredRole="student"><CheckoutPage /></ProtectedRoute>} />
+      <Route path="/student/orders" element={<ProtectedRoute requiredRole="student"><OrdersPage /></ProtectedRoute>} />
+      <Route path="/student/orders/:id" element={<ProtectedRoute requiredRole="student"><OrderDetailPage /></ProtectedRoute>} />
+      <Route path="/student/spending" element={<ProtectedRoute requiredRole="student"><SpendingPage /></ProtectedRoute>} />
+      <Route path="/student/vendor" element={<ProtectedRoute requiredRole="student"><VendorPage /></ProtectedRoute>} />
+      <Route path="/student/ai-recommender" element={<ProtectedRoute requiredRole="student"><AIRecommenderPage /></ProtectedRoute>} />
 
       {/* Cafeteria */}
-      <Route path="/cafeteria/analytics" element={<ProtectedRoute><Page name="Analytics" /></ProtectedRoute>} />
-      <Route path="/cafeteria/dashboard" element={<ProtectedRoute><CafeteriaDashboard /></ProtectedRoute>} />
-      <Route path="/cafeteria/menu" element={<ProtectedRoute><CafeteriaMenuManagePage /></ProtectedRoute>} />
-      <Route path="/cafeteria/orders" element={<ProtectedRoute><CafeteriaOrdersPage /></ProtectedRoute>} />
-      <Route path="/cafeteria/ai-assistant" element={<ProtectedRoute><Page name="Cafeteria AI Assistant" /></ProtectedRoute>} />
-
-      {/* Admin */}
-      <Route path="/admin/dashboard" element={<ProtectedRoute><Page name="Admin Dashboard" /></ProtectedRoute>} />
-      <Route path="/admin/users" element={<ProtectedRoute><Page name="Users List" /></ProtectedRoute>} />
-      <Route path="/admin/orders" element={<ProtectedRoute><Page name="All Orders" /></ProtectedRoute>} />
-      <Route path="/admin/ai-assistant" element={<ProtectedRoute><Page name="Admin AI Assistant" /></ProtectedRoute>} />
+      <Route path="/cafeteria/dashboard" element={<ProtectedRoute requiredRole="cafeteria"><CafeteriaDashboard /></ProtectedRoute>} />
+      <Route path="/cafeteria/menu" element={<ProtectedRoute requiredRole="cafeteria"><CafeteriaMenuManagePage /></ProtectedRoute>} />
+      <Route path="/cafeteria/orders" element={<ProtectedRoute requiredRole="cafeteria"><CafeteriaOrdersPage /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" />} />

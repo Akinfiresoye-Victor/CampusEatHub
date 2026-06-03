@@ -11,7 +11,7 @@ const QUICK_ACTIONS = [
 const INITIAL_MESSAGE = {
   id: 1,
   role: 'assistant',
-  text: "Hey there! 👋 I'm your CampusConnect AI Assistant.\n\nI can help you find products, get meal recommendations within your budget, check cafeteria menus, track orders, and more!\n\nWhat would you like to do today?",
+  text: "Hey there! 👋 I'm your ByteNBite AI Assistant.\n\nI can help you find products, get meal recommendations within your budget, check cafeteria menus, track orders, and more!\n\nWhat would you like to do today?",
   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 }
 
@@ -61,7 +61,7 @@ export default function AIChatBubble() {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
-          system: `You are the CampusConnect AI Assistant for a Nigerian university campus marketplace app at Elizade University, Ilara-Mokin, Ondo State.
+          system: `You are the ByteNBite AI Assistant for a Nigerian university campus marketplace app at Elizade University, Ilara-Mokin, Ondo State.
 
 You help students with:
 - 🍽️ Meal recommendations based on their budget in Naira (₦) — always show the math and list specific meals

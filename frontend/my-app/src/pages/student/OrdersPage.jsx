@@ -1,22 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { getOrders } from '../../api/ordersApi'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
-  Clock, Cog, CheckCircle, Truck, XCircle, PartyPopper
+  LogOut, Menu, Search, ShoppingCart,
+  Clock, Cog, CheckCircle, Truck, XCircle, PartyPopper, AlertTriangle
 } from 'lucide-react'
-
-const DUMMY_ORDERS = [
-  { id: 1, seller_name: "Mama Nkechi's Kitchen", created_at: '2026-06-03T10:00:00', total: 3200, delivery_type: 'pickup', status: 'pending' },
-  { id: 2, seller_name: "Campus Bites", created_at: '2026-06-02T14:30:00', total: 2800, delivery_type: 'delivery', status: 'delivered' },
-  { id: 3, seller_name: "Mama Nkechi's Kitchen", created_at: '2026-06-01T09:15:00', total: 1500, delivery_type: 'pickup', status: 'processing' },
-  { id: 4, seller_name: "Campus Bites", created_at: '2026-05-31T16:45:00', total: 4200, delivery_type: 'delivery', status: 'ready' },
-  { id: 5, seller_name: "Mama Nkechi's Kitchen", created_at: '2026-05-30T11:20:00', total: 900, delivery_type: 'pickup', status: 'cancelled' },
-]
 
 const STATUS_CONFIG = {
   pending:    { bg: '#fef3c7', color: '#d97706', label: 'Pending',    icon: <Clock size={13} /> },
@@ -27,29 +19,19 @@ const STATUS_CONFIG = {
 }
 
 export default function OrdersPage() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
+  const { orders, isLoading, error, fetchOrders } = useOrderStore()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [orders, setOrders] = useState(DUMMY_ORDERS)
-  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [successMsg, setSuccessMsg] = useState(location.state?.success ? 'Your order has been placed!' : '')
 
   useEffect(() => {
-    getOrders()
-      .then((res) => {
-        if (res.data.success && res.data.data?.length > 0) setOrders(res.data.data)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    fetchOrders()
 
     const interval = setInterval(() => {
-      getOrders()
-        .then((res) => {
-          if (res.data.success && res.data.data?.length > 0) setOrders(res.data.data)
-        })
-        .catch(() => {})
+      fetchOrders()
     }, 30000)
 
     return () => clearInterval(interval)
@@ -61,11 +43,6 @@ export default function OrdersPage() {
       return () => clearTimeout(t)
     }
   }, [successMsg])
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
 
   const sidebarLinks = [
     { to: '/student/dashboard',  icon: <Home size={20} />,          label: 'Dashboard' },
@@ -90,7 +67,7 @@ export default function OrdersPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -102,15 +79,7 @@ export default function OrdersPage() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -159,8 +128,22 @@ export default function OrdersPage() {
             </div>
           </div>
 
+          {isLoading && (
+            <div className="pp-state">
+              <div className="pp-spinner" />
+              <p>Loading orders...</p>
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div className="pp-state error">
+              <AlertTriangle size={48} />
+              <p>{error}</p>
+            </div>
+          )}
+
           {/* EMPTY */}
-          {orders.length === 0 && (
+          {!isLoading && !error && orders.length === 0 && (
             <div className="pp-state">
               <Package size={52} />
               <p>No orders yet.</p>
@@ -169,7 +152,7 @@ export default function OrdersPage() {
           )}
 
           {/* ORDERS LIST */}
-          {orders.length > 0 && (
+          {!isLoading && !error && orders.length > 0 && (
             <div className="orders-list">
               {orders.map((order) => {
                 const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending

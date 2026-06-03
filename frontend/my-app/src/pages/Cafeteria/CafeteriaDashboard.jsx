@@ -1,38 +1,24 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { getCafeteriaOrders } from '../../api/cafeteriaApi'
+import { useAuthStore } from '../../stores/useAuthStore'
+import { getCafeteriaOrders, getCafeteriaStats } from '../../api/cafeteriaApi'
 import { formatNaira } from '../../utils/naira'
 import CafeteriaAIChatBubble from '../../components/CafeteriaAIChatBubble'
 import {
   Home, UtensilsCrossed, ClipboardList, BarChart3,
-  CircleHelp, Settings, LogOut, Menu, Search,
+  LogOut, Menu, Search,
   Bell, ShoppingBag, Wallet, ChefHat, Clock,
   CheckCircle, Package, XCircle, Layers, AlertTriangle
 } from 'lucide-react'
 
 const DUMMY_STATS = {
-  total_orders: 125,
-  revenue_today: 45000,
-  menu_items: 18,
-  pending_orders: 7,
+  total_orders: 0,
+  revenue_today: 0,
+  menu_items: 0,
+  pending_orders: 0,
 }
 
-const DUMMY_ORDERS = [
-  { id: 1045, buyer_name: 'Amaka P.', items: 'Jollof Rice, Chicken', status: 'pending', delivery_type: 'pickup', total: 2500, created_at: '2026-06-03T10:50:00' },
-  { id: 1044, buyer_name: 'John O.', items: 'Burger, Coke', status: 'processing', delivery_type: 'delivery', total: 1800, created_at: '2026-06-03T10:35:00' },
-  { id: 1043, buyer_name: 'Blessing S.', items: 'Fried Rice, Plantain', status: 'ready', delivery_type: 'pickup', total: 2000, created_at: '2026-06-03T10:25:00' },
-  { id: 1042, buyer_name: 'David R.', items: 'Shawarma', status: 'delivered', delivery_type: 'delivery', total: 1500, created_at: '2026-06-03T09:00:00' },
-  { id: 1041, buyer_name: 'Uche C.', items: 'Spaghetti, Meatball', status: 'delivered', delivery_type: 'pickup', total: 2200, created_at: '2026-06-03T08:00:00' },
-]
-
-const DUMMY_TOP_ITEMS = [
-  { name: 'Jollof Rice & Chicken', orders: 45, image: null },
-  { name: 'Chicken Burger', orders: 38, image: null },
-  { name: 'Fried Rice', orders: 32, image: null },
-  { name: 'Shawarma', orders: 28, image: null },
-  { name: 'Moi Moi', orders: 20, image: null },
-]
+const DUMMY_TOP_ITEMS = []
 
 const STATUS_CONFIG = {
   pending:    { bg: '#fef3c7', color: '#d97706', label: 'Pending',    icon: <Clock size={13} /> },
@@ -43,10 +29,10 @@ const STATUS_CONFIG = {
 }
 
 export default function CafeteriaDashboard() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [orders, setOrders] = useState(DUMMY_ORDERS)
+  const [orders, setOrders] = useState([])
   const [stats, setStats] = useState(DUMMY_STATS)
   const [search, setSearch] = useState('')
 
@@ -58,6 +44,8 @@ export default function CafeteriaDashboard() {
         }
       })
       .catch(() => {})
+
+    // Optional: if getCafeteriaStats exists in cafeteriaApi, fetch it here
   }, [])
 
   const handleLogout = async () => {
@@ -87,7 +75,7 @@ export default function CafeteriaDashboard() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b>Connect</b></span>}
+          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -102,15 +90,7 @@ export default function CafeteriaDashboard() {
         </nav>
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon"><CircleHelp size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
-          </Link>
-          <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Settings size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
-          </Link>
-          <button className="sd-sidebar-link logout" onClick={handleLogout}>
+          <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
@@ -341,7 +321,7 @@ export default function CafeteriaDashboard() {
         </div>
       </div>
 
-      <AIChatBubble />
+      {/* Use generic AIChatBubble instead of undefined CafeteriaAIChatBubble if it doesn't exist */}
     </div>
   )
 }

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { register as registerApi } from '../api/authApi'
-import { useAuth } from '../context/AuthContext'
+import { useAuthStore } from '../stores/useAuthStore'
 import { User, IdCard, Hash, Lock, Eye, EyeOff, Store, Phone, Mail, GraduationCap, UtensilsCrossed, ArrowRight } from 'lucide-react'
 
 export default function RegisterPage() {
-  const { login } = useAuth()
+  const { setUser } = useAuthStore()
   const navigate = useNavigate()
   const [role, setRole] = useState('student')
   const [showPassword, setShowPassword] = useState(false)
@@ -17,16 +17,14 @@ export default function RegisterPage() {
     full_name: '',
     matric_number: '',
     username: '',
-    password1: '',
+    password: '',
     password2: '',
   })
 
   const [cafeteriaData, setCafeteriaData] = useState({
-    business_name: '',
-    phone_number: '',
-    owner_name: '',
-    email: '',
-    password1: '',
+    full_name: '',
+    username: '',
+    password: '',
     password2: '',
   })
 
@@ -41,11 +39,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (role === 'student' && studentData.password1 !== studentData.password2) {
+
+    if (role === 'student' && studentData.password !== studentData.password2) {
       setError('Passwords do not match.')
       return
     }
-    if (role === 'cafeteria' && cafeteriaData.password1 !== cafeteriaData.password2) {
+    if (role === 'cafeteria' && cafeteriaData.password !== cafeteriaData.password2) {
       setError('Passwords do not match.')
       return
     }
@@ -58,26 +57,22 @@ export default function RegisterPage() {
             full_name: studentData.full_name,
             matric_number: studentData.matric_number,
             username: studentData.username,
-            password1: studentData.password1,
-            password2: studentData.password2,
+            password: studentData.password,
           }
         : {
             role: 'cafeteria',
-            business_name: cafeteriaData.business_name,
-            phone_number: cafeteriaData.phone_number,
-            owner_name: cafeteriaData.owner_name,
-            email: cafeteriaData.email,
-            password1: cafeteriaData.password1,
-            password2: cafeteriaData.password2,
+            full_name: cafeteriaData.full_name,
+            username: cafeteriaData.username,
+            password: cafeteriaData.password,
           }
 
       const res = await registerApi(payload)
       if (res.data.success) {
-        login(res.data.data)
+        setUser(res.data.data)
         if (role === 'student') navigate('/student/dashboard')
         else navigate('/cafeteria/dashboard')
       } else {
-        setError(res.data.error)
+        setError(res.data.error || 'Registration failed. Please try again.')
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Something went wrong. Please try again.')
@@ -90,13 +85,13 @@ export default function RegisterPage() {
     <div className="register-page">
 
       <div className="admin-login">
-        <Link to="/login_user">← Back to Login</Link>
+        <Link to="/login">← Back to Login</Link>
       </div>
 
       <div className="register-card">
 
         <img src="/elizade.png" alt="Elizade University" className="logo" />
-        <h1>Campus <span>Register</span></h1>
+        <h1>Byte<span>N</span>Bite</h1>
         <p className="subtitle">Create your account to get started</p>
 
         <div className="role-selection">
@@ -154,7 +149,7 @@ export default function RegisterPage() {
                   <label>Password</label>
                   <div className="input-group">
                     <span className="icon"><Lock size={18} /></span>
-                    <input type={showPassword ? 'text' : 'password'} name="password1" placeholder="Password" value={studentData.password1} onChange={handleStudentChange} required />
+                    <input type={showPassword ? 'text' : 'password'} name="password" placeholder="Password" value={studentData.password} onChange={handleStudentChange} required />
                     <button type="button" className="eye-btn" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                     </button>
@@ -176,34 +171,17 @@ export default function RegisterPage() {
             <>
               <div className="form-row">
                 <div className="form-col">
-                  <label>Owner Name</label>
+                  <label>Full Name / Owner</label>
                   <div className="input-group">
                     <span className="icon"><User size={18} /></span>
-                    <input type="text" name="owner_name" placeholder="Owner full name" value={cafeteriaData.owner_name} onChange={handleCafeteriaChange} required />
+                    <input type="text" name="full_name" placeholder="Owner full name" value={cafeteriaData.full_name} onChange={handleCafeteriaChange} required />
                   </div>
                 </div>
                 <div className="form-col">
-                  <label>Business Name</label>
+                  <label>Username (Cafeteria)</label>
                   <div className="input-group">
                     <span className="icon"><Store size={18} /></span>
-                    <input type="text" name="business_name" placeholder="Cafeteria name" value={cafeteriaData.business_name} onChange={handleCafeteriaChange} required />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-col">
-                  <label>Phone Number</label>
-                  <div className="input-group">
-                    <span className="icon"><Phone size={18} /></span>
-                    <input type="tel" name="phone_number" placeholder="Phone number" value={cafeteriaData.phone_number} onChange={handleCafeteriaChange} required />
-                  </div>
-                </div>
-                <div className="form-col">
-                  <label>Email</label>
-                  <div className="input-group">
-                    <span className="icon"><Mail size={18} /></span>
-                    <input type="email" name="email" placeholder="Business email" value={cafeteriaData.email} onChange={handleCafeteriaChange} required />
+                    <input type="text" name="username" placeholder="Cafeteria username" value={cafeteriaData.username} onChange={handleCafeteriaChange} required />
                   </div>
                 </div>
               </div>
@@ -213,7 +191,7 @@ export default function RegisterPage() {
                   <label>Password</label>
                   <div className="input-group">
                     <span className="icon"><Lock size={18} /></span>
-                    <input type={showPassword ? 'text' : 'password'} name="password1" placeholder="Password" value={cafeteriaData.password1} onChange={handleCafeteriaChange} required />
+                    <input type={showPassword ? 'text' : 'password'} name="password" placeholder="Password" value={cafeteriaData.password} onChange={handleCafeteriaChange} required />
                     <button type="button" className="eye-btn" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                     </button>
