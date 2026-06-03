@@ -5,6 +5,11 @@ import { getCafeteriaMenu } from '../../api/productsApi'
 import { addToCart } from '../../api/cartApi'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
+import {
+  Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
+  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
+  CheckCircle, XCircle, AlertTriangle
+} from 'lucide-react'
 
 const DUMMY_MENU = [
   { id: 1, name: 'Jollof Rice & Chicken', price: 1500, available: true, category: 'Lunch' },
@@ -34,9 +39,7 @@ export default function CafeteriaMenuPage() {
     setLoading(true)
     getCafeteriaMenu(id)
       .then((res) => {
-        if (res.data.success && res.data.data.length > 0) {
-          setMenuItems(res.data.data)
-        }
+        if (res.data.success && res.data.data.length > 0) setMenuItems(res.data.data)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -49,7 +52,7 @@ export default function CafeteriaMenuPage() {
     try {
       const res = await addToCart({ product_id: productId, quantity: 1 })
       if (res.data.success) {
-        setToast('Added to cart! 🛒')
+        setToast('Added to cart!')
         setTimeout(() => setToast(''), 3000)
       } else {
         setCartError(res.data.error)
@@ -67,12 +70,12 @@ export default function CafeteriaMenuPage() {
   }
 
   const sidebarLinks = [
-    { to: '/student/dashboard', icon: '🏠', label: 'Dashboard' },
-    { to: '/student/products', icon: '🛍️', label: 'All Products' },
-    { to: '/student/cafeterias', icon: '🍽️', label: 'Cafeterias', active: true },
-    { to: '/student/vendor', icon: '🏪', label: 'My Shop' },
-    { to: '/student/orders', icon: '📦', label: 'My Orders' },
-    { to: '/student/spending', icon: '💰', label: 'Spending' },
+    { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/student/products', icon: <ShoppingBag size={20} />, label: 'All Products' },
+    { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias', active: true },
+    { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
+    { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
+    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
   const filtered = menuItems.filter((item) => {
@@ -104,15 +107,15 @@ export default function CafeteriaMenuPage() {
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
           <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon">❓</span>
+            <span className="sd-link-icon"><CircleHelp size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
           </Link>
           <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon">⚙️</span>
+            <span className="sd-link-icon"><Settings size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Settings</span>}
           </Link>
           <button className="sd-sidebar-link logout" onClick={handleLogout}>
-            <span className="sd-link-icon">🚪</span>
+            <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
         </div>
@@ -120,24 +123,19 @@ export default function CafeteriaMenuPage() {
 
       {/* MAIN */}
       <div className="sd-main">
-
-        {/* TOPBAR */}
         <header className="sd-topbar">
-          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Menu size={22} />
+          </button>
           <form className="sd-search" onSubmit={(e) => e.preventDefault()}>
-            <span>🔍</span>
-            <input
-              type="text"
-              placeholder="Search menu items..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <Search size={18} />
+            <input type="text" placeholder="Search menu items..." value={search} onChange={(e) => setSearch(e.target.value)} />
             <button type="submit">Search</button>
           </form>
           <div className="sd-topbar-right">
-            <Link to="/student/orders" className="sd-top-icon"><span>📦</span><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><span>💰</span><small>Spending</small></Link>
-            <Link to="/student/cart" className="sd-top-icon"><span>🛒</span><small>Cart</small></Link>
+            <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
+            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
+            <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>
               <small>{user?.full_name || user?.username || 'Student'} ▾</small>
@@ -145,16 +143,12 @@ export default function CafeteriaMenuPage() {
           </div>
         </header>
 
-        {/* CONTENT */}
         <div className="sd-content">
-
-          {/* BACK */}
           <Link to="/student/cafeterias" className="cm-back">← Back to Cafeterias</Link>
 
-          {/* HERO BANNER */}
           <div className="cm-hero">
             <div className="cm-hero-info">
-              <div className="cm-hero-logo">🍽️</div>
+              <div className="cm-hero-logo"><UtensilsCrossed size={32} /></div>
               <div>
                 <div className="cm-hero-badge">Open</div>
                 <h2>Cafeteria Menu</h2>
@@ -163,13 +157,11 @@ export default function CafeteriaMenuPage() {
             <div className="cm-hero-bg" />
           </div>
 
-          {/* TOAST */}
           {toast && <div className="pp-toast">{toast}</div>}
 
-          {/* CART ERROR */}
           {cartError && (
             <div className="pp-cart-error">
-              <span>⚠️ {cartError}</span>
+              <span><AlertTriangle size={16} /> {cartError}</span>
               <button onClick={async () => {
                 const { clearCart } = await import('../../api/cartApi')
                 await clearCart()
@@ -180,20 +172,14 @@ export default function CafeteriaMenuPage() {
             </div>
           )}
 
-          {/* CATEGORY TABS */}
           <div className="cm-tabs">
             {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                className={`cm-tab ${activeCategory === cat ? 'active' : ''}`}
-                onClick={() => setActiveCategory(cat)}
-              >
+              <button key={cat} className={`cm-tab ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
                 {cat}
               </button>
             ))}
           </div>
 
-          {/* LOADING */}
           {loading && (
             <div className="pp-state">
               <div className="pp-spinner" />
@@ -201,28 +187,23 @@ export default function CafeteriaMenuPage() {
             </div>
           )}
 
-          {/* AVAILABLE ITEMS */}
           {!loading && available.length > 0 && (
             <>
-              <h3 className="cm-section-title">✅ Available Now</h3>
+              <h3 className="cm-section-title"><CheckCircle size={18} /> Available Now</h3>
               <div className="cm-grid">
                 {available.map((item) => (
                   <div key={item.id} className="cm-card">
                     <div className="cm-card-img">
                       {item.image
                         ? <img src={item.image} alt={item.name} />
-                        : <div className="cm-img-placeholder">🍛</div>
+                        : <div className="cm-img-placeholder"><UtensilsCrossed size={32} /></div>
                       }
                     </div>
                     <div className="cm-card-body">
                       <h4>{item.name}</h4>
                       <p className="cm-category">{item.category}</p>
                       <p className="cm-price">{formatNaira(item.price)}</p>
-                      <button
-                        className="cm-add-btn"
-                        onClick={() => handleAddToCart(item.id)}
-                        disabled={addingId === item.id}
-                      >
+                      <button className="cm-add-btn" onClick={() => handleAddToCart(item.id)} disabled={addingId === item.id}>
                         {addingId === item.id ? 'Adding...' : '+ Add'}
                       </button>
                     </div>
@@ -232,17 +213,16 @@ export default function CafeteriaMenuPage() {
             </>
           )}
 
-          {/* UNAVAILABLE ITEMS */}
           {!loading && unavailable.length > 0 && (
             <>
-              <h3 className="cm-section-title">❌ Not Available Today</h3>
+              <h3 className="cm-section-title"><XCircle size={18} /> Not Available Today</h3>
               <div className="cm-grid">
                 {unavailable.map((item) => (
                   <div key={item.id} className="cm-card unavailable">
                     <div className="cm-card-img">
                       {item.image
                         ? <img src={item.image} alt={item.name} />
-                        : <div className="cm-img-placeholder">🍛</div>
+                        : <div className="cm-img-placeholder"><UtensilsCrossed size={32} /></div>
                       }
                       <div className="cm-unavailable-overlay">Not Available Today</div>
                     </div>
@@ -258,13 +238,12 @@ export default function CafeteriaMenuPage() {
             </>
           )}
 
-          {/* EMPTY */}
           {!loading && filtered.length === 0 && (
             <div className="pp-state">
-              <p>🍽️ No menu items found.</p>
+              <UtensilsCrossed size={48} />
+              <p>No menu items found.</p>
             </div>
           )}
-
         </div>
       </div>
 

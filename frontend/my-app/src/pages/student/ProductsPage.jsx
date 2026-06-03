@@ -5,6 +5,11 @@ import { getProducts } from '../../api/productsApi'
 import { addToCart } from '../../api/cartApi'
 import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
+import {
+  Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
+  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
+  Heart, Star, AlertTriangle
+} from 'lucide-react'
 
 export default function ProductsPage() {
   const { user, logout } = useAuth()
@@ -35,7 +40,7 @@ export default function ProductsPage() {
     try {
       const res = await addToCart({ product_id: productId, quantity: 1 })
       if (res.data.success) {
-        setToast('Added to cart! 🛒')
+        setToast('Added to cart!')
         setTimeout(() => setToast(''), 3000)
       } else {
         setCartError(res.data.error)
@@ -47,32 +52,23 @@ export default function ProductsPage() {
     }
   }
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
-
-  const handleSearch = (e) => {
-    e.preventDefault()
-  }
+  const handleLogout = async () => { await logout(); navigate('/login') }
+  const handleSearch = (e) => e.preventDefault()
 
   const sidebarLinks = [
-    { to: '/student/dashboard', icon: '🏠', label: 'Dashboard' },
-    { to: '/student/products', icon: '🛍️', label: 'All Products', active: true },
-    { to: '/student/cafeterias', icon: '🍽️', label: 'Cafeterias' },
-    { to: '/student/vendor', icon: '🏪', label: 'My Shop' },
-    { to: '/student/orders', icon: '📦', label: 'My Orders' },
-    { to: '/student/spending', icon: '💰', label: 'Spending' },
+    { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/student/products', icon: <ShoppingBag size={20} />, label: 'All Products', active: true },
+    { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
+    { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
+    { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
+    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
-  const filteredProducts = products.filter((p) =>
-    p.name?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredProducts = products.filter((p) => p.name?.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="sd-layout">
 
-      {/* SIDEBAR */}
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
@@ -89,40 +85,34 @@ export default function ProductsPage() {
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
           <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon">❓</span>
+            <span className="sd-link-icon"><CircleHelp size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
           </Link>
           <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon">⚙️</span>
+            <span className="sd-link-icon"><Settings size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Settings</span>}
           </Link>
           <button className="sd-sidebar-link logout" onClick={handleLogout}>
-            <span className="sd-link-icon">🚪</span>
+            <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
           </button>
         </div>
       </aside>
 
-      {/* MAIN */}
       <div className="sd-main">
-
-        {/* TOPBAR */}
         <header className="sd-topbar">
-          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Menu size={22} />
+          </button>
           <form className="sd-search" onSubmit={handleSearch}>
-            <span>🔍</span>
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <Search size={18} />
+            <input type="text" placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} />
             <button type="submit">Search</button>
           </form>
           <div className="sd-topbar-right">
-            <Link to="/student/orders" className="sd-top-icon"><span>📦</span><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><span>💰</span><small>Spending</small></Link>
-            <Link to="/student/cart" className="sd-top-icon"><span>🛒</span><small>Cart</small></Link>
+            <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
+            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
+            <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>
               <small>{user?.full_name || user?.username || 'Student'} ▾</small>
@@ -130,10 +120,7 @@ export default function ProductsPage() {
           </div>
         </header>
 
-        {/* CONTENT */}
         <div className="sd-content">
-
-          {/* PAGE HEADER */}
           <div className="pp-header">
             <div>
               <h2>All Products</h2>
@@ -142,13 +129,11 @@ export default function ProductsPage() {
             <Link to="/student/vendor" className="pp-add-btn">+ Add Product</Link>
           </div>
 
-          {/* TOAST */}
           {toast && <div className="pp-toast">{toast}</div>}
 
-          {/* SELLER LOCK ERROR */}
           {cartError && (
             <div className="pp-cart-error">
-              <span>⚠️ {cartError}</span>
+              <span><AlertTriangle size={16} /> {cartError}</span>
               <button onClick={async () => {
                 const { clearCart } = await import('../../api/cartApi')
                 await clearCart()
@@ -160,14 +145,11 @@ export default function ProductsPage() {
           )}
 
           <div className="pp-body">
-
-            {/* FILTERS */}
             <aside className="pp-filters">
               <div className="pp-filter-header">
                 <h3>Filters</h3>
                 <button className="pp-clear-btn">Clear all</button>
               </div>
-
               <div className="pp-filter-section">
                 <h4>Category <span>▲</span></h4>
                 {['All Categories', 'Books & Notes', 'Electronics', 'Stationery', 'Clothing', 'Others'].map((cat) => (
@@ -177,7 +159,6 @@ export default function ProductsPage() {
                   </label>
                 ))}
               </div>
-
               <div className="pp-filter-section">
                 <h4>Condition <span>▲</span></h4>
                 {['New', 'Like New', 'Used'].map((cond) => (
@@ -187,18 +168,12 @@ export default function ProductsPage() {
                   </label>
                 ))}
               </div>
-
-              <button className="pp-apply-btn">🔍 Apply Filters</button>
+              <button className="pp-apply-btn"><Search size={15} /> Apply Filters</button>
             </aside>
 
-            {/* PRODUCTS */}
             <div className="pp-products-area">
-
-              {/* TOOLBAR */}
               <div className="pp-toolbar">
-                <span className="pp-count">
-                  Showing <b>{filteredProducts.length}</b> products
-                </span>
+                <span className="pp-count">Showing <b>{filteredProducts.length}</b> products</span>
                 <select className="pp-sort">
                   <option>Sort by: Newest First</option>
                   <option>Price: Low to High</option>
@@ -206,7 +181,6 @@ export default function ProductsPage() {
                 </select>
               </div>
 
-              {/* STATES */}
               {loading && (
                 <div className="pp-state">
                   <div className="pp-spinner" />
@@ -216,17 +190,18 @@ export default function ProductsPage() {
 
               {!loading && error && (
                 <div className="pp-state error">
-                  <p>⚠️ {error}</p>
+                  <AlertTriangle size={32} />
+                  <p>{error}</p>
                 </div>
               )}
 
               {!loading && !error && filteredProducts.length === 0 && (
                 <div className="pp-state">
-                  <p>🛍️ No products found.</p>
+                  <ShoppingBag size={48} />
+                  <p>No products found.</p>
                 </div>
               )}
 
-              {/* GRID */}
               {!loading && !error && filteredProducts.length > 0 && (
                 <div className="pp-grid">
                   {filteredProducts.map((product) => (
@@ -234,14 +209,14 @@ export default function ProductsPage() {
                       <div className="pp-card-img">
                         {product.image
                           ? <img src={product.image} alt={product.name} />
-                          : <div className="pp-img-placeholder">🛍️</div>
+                          : <div className="pp-img-placeholder"><ShoppingBag size={32} /></div>
                         }
                         {product.condition && (
                           <span className={`pp-badge pp-badge-${product.condition?.toLowerCase().replace(' ', '-')}`}>
                             {product.condition}
                           </span>
                         )}
-                        <button className="pp-wishlist">♡</button>
+                        <button className="pp-wishlist"><Heart size={16} /></button>
                       </div>
                       <div className="pp-card-body">
                         <h4>{product.name}</h4>
@@ -255,7 +230,7 @@ export default function ProductsPage() {
                             <span>{product.seller_name || 'Vendor'}</span>
                           </div>
                           {product.rating && (
-                            <span className="pp-rating">⭐ {product.rating}</span>
+                            <span className="pp-rating"><Star size={13} /> {product.rating}</span>
                           )}
                         </div>
                         <button
@@ -263,14 +238,14 @@ export default function ProductsPage() {
                           onClick={() => handleAddToCart(product.id)}
                           disabled={addingId === product.id}
                         >
-                          {addingId === product.id ? 'Adding...' : '🛒 Add to Cart'}
+                          <ShoppingCart size={15} />
+                          {addingId === product.id ? 'Adding...' : 'Add to Cart'}
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-
             </div>
           </div>
         </div>

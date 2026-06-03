@@ -3,6 +3,24 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import AIChatBubble from '../AIChatBubble'
 
+import {
+  Home,
+  ShoppingBag,
+  UtensilsCrossed,
+  Store,
+  Package,
+  Wallet,
+  CircleHelp,
+  Settings,
+  LogOut,
+  Search,
+  Menu,
+  ShoppingCart,
+  Sparkles,
+  Clock3,
+  ChartColumn
+} from 'lucide-react'
+
 export default function StudentDashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -20,21 +38,88 @@ export default function StudentDashboard() {
   }
 
   const sidebarLinks = [
-    { to: '/student/dashboard', icon: '🏠', label: 'Dashboard', active: true },
-    { to: '/student/products', icon: '🛍️', label: 'All Products' },
-    { to: '/student/cafeterias', icon: '🍽️', label: 'Cafeterias' },
-    { to: '/student/vendor', icon: '🏪', label: 'My Shop' },
-    { to: '/student/orders', icon: '📦', label: 'My Orders' },
-    { to: '/student/spending', icon: '💰', label: 'Spending' },
+    {
+      to: '/student/dashboard',
+      icon: <Home size={20} />,
+      label: 'Dashboard',
+      active: true,
+    },
+    {
+      to: '/student/products',
+      icon: <ShoppingBag size={20} />,
+      label: 'All Products',
+    },
+    {
+      to: '/student/cafeterias',
+      icon: <UtensilsCrossed size={20} />,
+      label: 'Cafeterias',
+    },
+    {
+      to: '/student/vendor',
+      icon: <Store size={20} />,
+      label: 'My Shop',
+    },
+    {
+      to: '/student/orders',
+      icon: <Package size={20} />,
+      label: 'My Orders',
+    },
+    {
+      to: '/student/spending',
+      icon: <Wallet size={20} />,
+      label: 'Spending',
+    },
   ]
 
   const quickCards = [
-    { to: '/student/products', icon: '🛍️', label: 'Browse Products', desc: 'Shop from student vendors', color: '#eef2ff', iconBg: '#4f46e5' },
-    { to: '/student/cafeterias', icon: '🍽️', label: 'Cafeterias', desc: 'View cafeteria menus', color: '#f0fdf4', iconBg: '#16a34a' },
-    { to: '/student/cart', icon: '🛒', label: 'My Cart', desc: 'View your cart items', color: '#fff7ed', iconBg: '#ea580c' },
-    { to: '/student/orders', icon: '📦', label: 'My Orders', desc: 'Track your orders', color: '#fdf2f8', iconBg: '#db2777' },
-    { to: '/student/spending', icon: '💰', label: 'Spending', desc: 'View spending history', color: '#fefce8', iconBg: '#ca8a04' },
-    { to: '/student/vendor', icon: '🏪', label: 'My Shop', desc: 'Manage your products', color: '#eff6ff', iconBg: '#2563eb' },
+    {
+      to: '/student/products',
+      icon: <ShoppingBag size={24} />,
+      label: 'Browse Products',
+      desc: 'Shop from student vendors',
+      color: '#eef2ff',
+      iconBg: '#4f46e5',
+    },
+    {
+      to: '/student/cafeterias',
+      icon: <UtensilsCrossed size={24} />,
+      label: 'Cafeterias',
+      desc: 'View cafeteria menus',
+      color: '#f0fdf4',
+      iconBg: '#16a34a',
+    },
+    {
+      to: '/student/cart',
+      icon: <ShoppingCart size={24} />,
+      label: 'My Cart',
+      desc: 'View your cart items',
+      color: '#fff7ed',
+      iconBg: '#ea580c',
+    },
+    {
+      to: '/student/orders',
+      icon: <Package size={24} />,
+      label: 'My Orders',
+      desc: 'Track your orders',
+      color: '#fdf2f8',
+      iconBg: '#db2777',
+    },
+    {
+      to: '/student/spending',
+      icon: <Wallet size={24} />,
+      label: 'Spending',
+      desc: 'View spending history',
+      color: '#fefce8',
+      iconBg: '#ca8a04',
+    },
+    {
+      to: '/student/vendor',
+      icon: <Store size={24} />,
+      label: 'My Shop',
+      desc: 'Manage your products',
+      color: '#eff6ff',
+      iconBg: '#2563eb',
+    },
   ]
 
   return (
@@ -62,17 +147,32 @@ export default function StudentDashboard() {
 
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
+
           <Link to="/help" className="sd-sidebar-link">
-            <span className="sd-link-icon">❓</span>
-            {sidebarOpen && <span className="sd-link-label">Help & Support</span>}
+            <span className="sd-link-icon">
+              <CircleHelp size={20} />
+            </span>
+            {sidebarOpen && (
+              <span className="sd-link-label">Help & Support</span>
+            )}
           </Link>
+
           <Link to="/settings" className="sd-sidebar-link">
-            <span className="sd-link-icon">⚙️</span>
-            {sidebarOpen && <span className="sd-link-label">Settings</span>}
+            <span className="sd-link-icon">
+              <Settings size={20} />
+            </span>
+            {sidebarOpen && (
+              <span className="sd-link-label">Settings</span>
+            )}
           </Link>
+
           <button className="sd-sidebar-link logout" onClick={handleLogout}>
-            <span className="sd-link-icon">🚪</span>
-            {sidebarOpen && <span className="sd-link-label">Logout</span>}
+            <span className="sd-link-icon">
+              <LogOut size={20} />
+            </span>
+            {sidebarOpen && (
+              <span className="sd-link-label">Logout</span>
+            )}
           </button>
         </div>
       </aside>
@@ -82,12 +182,15 @@ export default function StudentDashboard() {
 
         {/* TOP NAVBAR */}
         <header className="sd-topbar">
-          <button className="sd-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            ☰
+          <button
+            className="sd-hamburger"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <Menu size={22} />
           </button>
 
           <form className="sd-search" onSubmit={handleSearch}>
-            <span>🔍</span>
+            <Search size={18} />
             <input
               type="text"
               placeholder="Search products, cafeterias and more..."
@@ -99,15 +202,15 @@ export default function StudentDashboard() {
 
           <div className="sd-topbar-right">
             <Link to="/student/orders" className="sd-top-icon">
-              <span>📦</span>
+              <Package size={20} />
               <small>Orders</small>
             </Link>
             <Link to="/student/spending" className="sd-top-icon">
-              <span>💰</span>
+              <Wallet size={20} />
               <small>Spending</small>
             </Link>
             <Link to="/student/cart" className="sd-top-icon">
-              <span>🛒</span>
+              <ShoppingCart size={20} />
               <small>Cart</small>
             </Link>
             <div className="sd-avatar">
@@ -126,8 +229,14 @@ export default function StudentDashboard() {
               <h2>Welcome back, <span>{user?.full_name || user?.username || 'Student'}</span> 👋</h2>
               <p>What would you like to do today?</p>
               <div className="sd-banner-btns">
-                <Link to="/student/products" className="sd-banner-btn primary">✨ Explore Now</Link>
-                <Link to="/student/orders" className="sd-banner-btn outline">📦 View My Orders</Link>
+                <Link to="/student/products" className="sd-banner-btn primary">
+                  <Sparkles size={18} />
+                  Explore Now
+                </Link>
+                <Link to="/student/orders" className="sd-banner-btn outline">
+                  <Package size={18} />
+                  View My Orders
+                </Link>
               </div>
             </div>
             <div className="sd-banner-img">
@@ -144,8 +253,11 @@ export default function StudentDashboard() {
           <div className="sd-quick-grid">
             {quickCards.map((card) => (
               <Link to={card.to} key={card.to} className="sd-quick-card" style={{ background: card.color }}>
-                <div className="sd-quick-icon" style={{ background: card.iconBg + '22' }}>
-                  <span>{card.icon}</span>
+                <div
+                  className="sd-quick-icon"
+                  style={{ background: card.iconBg + '22' }}
+                >
+                  {card.icon}
                 </div>
                 <div className="sd-quick-text">
                   <h4>{card.label}</h4>
@@ -162,7 +274,10 @@ export default function StudentDashboard() {
             {/* Recent Activity */}
             <div className="sd-box">
               <div className="sd-box-header">
-                <h3>⏱️ Recent Activity</h3>
+                <h3>
+                  <Clock3 size={18} />
+                  Recent Activity
+                </h3>
               </div>
               <div className="sd-activity-list">
                 <div className="sd-activity-item">
@@ -188,7 +303,10 @@ export default function StudentDashboard() {
             {/* Quick Stats */}
             <div className="sd-box">
               <div className="sd-box-header">
-                <h3>📊 Quick Stats</h3>
+                <h3>
+                  <ChartColumn size={18} />
+                  Quick Stats
+                </h3>
               </div>
               <div className="sd-stats-grid">
                 <div className="sd-stat-card blue">

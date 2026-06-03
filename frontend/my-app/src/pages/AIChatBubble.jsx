@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
+import { Bot, User, X, Send, UtensilsCrossed, ShoppingBag, Package, Wallet } from 'lucide-react'
 
 const QUICK_ACTIONS = [
-  { label: '🛍️ Browse Products', prompt: 'Show me available products' },
-  { label: '🍽️ View Cafeterias', prompt: 'What cafeterias are available?' },
-  { label: '📦 Track Orders', prompt: 'Show my recent orders' },
-  { label: '💰 Spending Summary', prompt: 'Give me my spending summary' },
+  { label: 'Meal Recommender', icon: <UtensilsCrossed size={13} />, prompt: 'I need meal recommendations within my budget. What can I eat today on campus?' },
+  { label: 'Browse Products', icon: <ShoppingBag size={13} />, prompt: 'Show me available products on campus' },
+  { label: 'Track Orders', icon: <Package size={13} />, prompt: 'Show my recent orders and their status' },
+  { label: 'Spending Summary', icon: <Wallet size={13} />, prompt: 'Give me a summary of my spending history' },
 ]
 
 const INITIAL_MESSAGE = {
   id: 1,
   role: 'assistant',
-  text: "Hey there! 👋 I'm your CampusConnect AI Assistant.\n\nI can help you find products, check cafeteria menus, track orders, and more!\n\nWhat would you like to do today?",
+  text: "Hey there! 👋 I'm your CampusConnect AI Assistant.\n\nI can help you find products, get meal recommendations within your budget, check cafeteria menus, track orders, and more!\n\nWhat would you like to do today?",
   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 }
 
@@ -60,10 +61,24 @@ export default function AIChatBubble() {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
-          system: `You are the CampusConnect AI Assistant for a Nigerian university campus marketplace app.
-You help students browse products from student vendors, view cafeteria menus, track orders, manage their shop, and understand spending.
-Be friendly, concise, and use relevant emojis occasionally. Keep responses short and actionable.
-Currency is Nigerian Naira (₦). The platform connects students to buy/sell products and view cafeteria meals on campus.`,
+          system: `You are the CampusConnect AI Assistant for a Nigerian university campus marketplace app at Elizade University, Ilara-Mokin, Ondo State.
+
+You help students with:
+- 🍽️ Meal recommendations based on their budget in Naira (₦) — always show the math and list specific meals
+- 🛍️ Browsing products from student vendors on campus
+- 🍴 Checking cafeteria menus and availability
+- 📦 Tracking their orders and order status
+- 💰 Understanding their spending history
+- 🏪 Managing their own shop/vendor listings
+
+Rules:
+- Be friendly, warm, and use relevant emojis
+- Keep responses concise and actionable
+- Currency is always Nigerian Naira (₦)
+- When recommending meals, show the breakdown: meal name + price + total
+- If budget is very low (under ₦200), playfully roast them but still try to help
+- If budget is very high (over ₦10,000), joke about investing instead but still recommend meals
+- Always encourage students to explore the platform`,
           messages: [
             ...messages
               .filter((m) => m.role === 'user' || m.id !== 1)
@@ -110,7 +125,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
         }
 
-        /* BUBBLE */
         .ai-fab {
           position: fixed;
           bottom: 30px;
@@ -123,11 +137,11 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.9rem;
           cursor: pointer;
           z-index: 1000;
           box-shadow: 0 6px 28px rgba(79,70,229,0.5);
           transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s;
+          color: white;
         }
         .ai-fab:hover {
           transform: scale(1.12);
@@ -153,7 +167,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           50% { transform: scale(1.3); opacity: 0.7; }
         }
 
-        /* BACKDROP */
         .ai-backdrop {
           position: fixed;
           inset: 0;
@@ -167,7 +180,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           to { opacity: 1; }
         }
 
-        /* CHAT PANEL */
         .ai-panel {
           position: fixed;
           bottom: 108px;
@@ -190,7 +202,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           to { transform: translateY(0) scale(1); opacity: 1; }
         }
 
-        /* HEADER */
         .ai-header {
           background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
           padding: 16px 18px;
@@ -207,9 +218,9 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.4rem;
           border: 2px solid rgba(255,255,255,0.3);
           flex-shrink: 0;
+          color: white;
         }
         .ai-header-info h4 {
           color: white;
@@ -241,7 +252,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           height: 30px;
           border-radius: 50%;
           cursor: pointer;
-          font-size: 1rem;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -251,7 +261,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           background: rgba(255,255,255,0.35);
         }
 
-        /* MESSAGES */
         .ai-messages {
           flex: 1;
           overflow-y: auto;
@@ -286,15 +295,16 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 0.9rem;
           flex-shrink: 0;
           margin-top: 2px;
         }
         .ai-msg.assistant .ai-msg-avatar {
           background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          color: white;
         }
         .ai-msg.user .ai-msg-avatar {
           background: #e5e7eb;
+          color: #6b7280;
         }
         .ai-msg-bubble {
           padding: 10px 14px;
@@ -325,7 +335,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           text-align: right;
         }
 
-        /* TYPING DOTS */
         .ai-typing-dots {
           display: flex;
           gap: 4px;
@@ -345,7 +354,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           30% { transform: translateY(-6px); }
         }
 
-        /* QUICK ACTIONS */
         .ai-quick-actions {
           padding: 8px 14px 0;
           display: flex;
@@ -365,6 +373,9 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           transition: all 0.2s;
           white-space: nowrap;
           font-family: inherit;
+          display: flex;
+          align-items: center;
+          gap: 5px;
         }
         .ai-quick-btn:hover {
           background: #eef2ff;
@@ -372,7 +383,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           transform: translateY(-1px);
         }
 
-        /* INPUT AREA */
         .ai-input-area {
           padding: 12px 14px;
           background: white;
@@ -417,7 +427,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1rem;
           transition: all 0.2s;
           flex-shrink: 0;
         }
@@ -446,29 +455,32 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
 
       <div className="ai-chat-wrapper">
 
-        {/* BACKDROP */}
         {open && <div className="ai-backdrop" onClick={() => setOpen(false)} />}
 
-        {/* CHAT PANEL */}
         {open && (
           <div className="ai-panel">
 
-            {/* Header */}
             <div className="ai-header">
-              <div className="ai-header-avatar">🤖</div>
+              <div className="ai-header-avatar">
+                <Bot size={22} />
+              </div>
               <div className="ai-header-info">
                 <h4>Campus AI Assistant</h4>
                 <span>Online • Always here to help</span>
               </div>
-              <button className="ai-header-close" onClick={() => setOpen(false)}>✕</button>
+              <button className="ai-header-close" onClick={() => setOpen(false)}>
+                <X size={16} />
+              </button>
             </div>
 
-            {/* Messages */}
             <div className="ai-messages">
               {messages.map((msg) => (
                 <div key={msg.id} className={`ai-msg ${msg.role}`}>
                   <div className="ai-msg-avatar">
-                    {msg.role === 'assistant' ? '🤖' : '👤'}
+                    {msg.role === 'assistant'
+                      ? <Bot size={16} />
+                      : <User size={16} />
+                    }
                   </div>
                   <div className="ai-msg-body">
                     <div className="ai-msg-bubble">{msg.text}</div>
@@ -479,7 +491,7 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
 
               {loading && (
                 <div className="ai-msg assistant">
-                  <div className="ai-msg-avatar">🤖</div>
+                  <div className="ai-msg-avatar"><Bot size={16} /></div>
                   <div className="ai-msg-body">
                     <div className="ai-msg-bubble" style={{ padding: 0 }}>
                       <div className="ai-typing-dots">
@@ -492,7 +504,6 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Actions */}
             <div className="ai-quick-actions">
               {QUICK_ACTIONS.map((a) => (
                 <button
@@ -500,12 +511,12 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
                   className="ai-quick-btn"
                   onClick={() => sendMessage(a.prompt)}
                 >
+                  {a.icon}
                   {a.label}
                 </button>
               ))}
             </div>
 
-            {/* Input */}
             <div className="ai-input-area">
               <div className="ai-input-wrap">
                 <input
@@ -523,20 +534,19 @@ Currency is Nigerian Naira (₦). The platform connects students to buy/sell pro
                 onClick={() => sendMessage()}
                 disabled={loading || !input.trim()}
               >
-                ➤
+                <Send size={18} />
               </button>
             </div>
 
           </div>
         )}
 
-        {/* FAB BUTTON */}
         <button
           className={`ai-fab ${open ? 'open-state' : ''} ${pulse && !open ? 'ai-fab-pulse' : ''}`}
           onClick={() => setOpen((v) => !v)}
           title="AI Assistant"
         >
-          {open ? '✕' : '🤖'}
+          {open ? <X size={26} /> : <Bot size={26} />}
         </button>
 
       </div>
