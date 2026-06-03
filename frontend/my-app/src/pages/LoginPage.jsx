@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login as loginApi } from '../api/authApi'
 import { useAuth } from '../context/AuthContext'
+import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -71,7 +72,7 @@ export default function LoginPage() {
 
           <label>Email / Username</label>
           <div className="input-group">
-            <span className="icon">👤</span>
+            <span className="icon"><User size={18} /></span>
             <input
               type="text"
               placeholder="Enter email or username"
@@ -83,7 +84,7 @@ export default function LoginPage() {
 
           <label>Password</label>
           <div className="input-group">
-            <span className="icon">🔒</span>
+            <span className="icon"><Lock size={18} /></span>
             <input
               type={showPassword ? 'text' : 'password'}
               placeholder="Enter password"
@@ -91,33 +92,35 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <button
-              type="button"
-              className="eye-btn"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? '🙈' : '👁️'}
-            </button>
+           <button
+  type="button"
+  className="eye-btn"
+  onClick={() => setShowPassword(!showPassword)}
+>
+  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+</button>
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In →'}
+            {loading ? 'Signing in...' : (
+              <>Sign In <ArrowRight size={16} /></>
+            )}
           </button>
 
         </form>
 
         <div className="divider">or continue with</div>
 
-     <div className="social-buttons">
-  <button type="button">
-    <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '18px', height: '18px', marginRight: '8px', verticalAlign: 'middle' }} />
-    Google
-  </button>
-  <button type="button">
-    <img src="https://www.microsoft.com/favicon.ico" alt="Microsoft" style={{ width: '18px', height: '18px', marginRight: '8px', verticalAlign: 'middle' }} />
-    Microsoft
-  </button>
-</div>
+        <div className="social-buttons">
+          <button type="button">
+            <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '18px', height: '18px', marginRight: '8px', verticalAlign: 'middle' }} />
+            Google
+          </button>
+          <button type="button">
+            <img src="https://www.microsoft.com/favicon.ico" alt="Microsoft" style={{ width: '18px', height: '18px', marginRight: '8px', verticalAlign: 'middle' }} />
+            Microsoft
+          </button>
+        </div>
 
         <div className="auth-link">
           Don't have an account? <Link to="/register">Register</Link>

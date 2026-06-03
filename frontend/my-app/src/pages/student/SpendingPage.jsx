@@ -1,31 +1,37 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getCafeterias } from '../../api/productsApi'
+import { getSpending } from '../../api/ordersApi'
+import { formatNaira } from '../../utils/naira'
 import AIChatBubble from '../AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
-  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart, Heart
+  CircleHelp, Settings, LogOut, Menu, Search, ShoppingCart,
+  CreditCard, BarChart3
 } from 'lucide-react'
 
-const DUMMY_CAFETERIAS = [
-  { id: 1, name: "Mama Nkechi's Kitchen", image: null, status: 'Open' },
-  { id: 2, name: "Campus Bites", image: null, status: 'Open' },
-]
+const DUMMY_SPENDING = {
+  total_spent: 45200,
+  total_orders: 12,
+  breakdown: [
+    { seller_name: "Mama Nkechi's Kitchen", total: 28500 },
+    { seller_name: "Campus Bites", total: 12700 },
+    { seller_name: "Student Vendor - Alex", total: 4000 },
+  ]
+}
 
-export default function CafeteriasPage() {
+export default function SpendingPage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [cafeterias, setCafeterias] = useState(DUMMY_CAFETERIAS)
+  const [spending, setSpending] = useState(DUMMY_SPENDING)
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
-    getCafeterias()
-      .then((res) => {
-        if (res.data.success && res.data.data.length > 0) setCafeterias(res.data.data)
-      })
+    setLoading(true)
+    getSpending()
+      .then((res) => { if (res.data.success) setSpending(res.data.data) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -38,13 +44,13 @@ export default function CafeteriasPage() {
   const sidebarLinks = [
     { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
     { to: '/student/products', icon: <ShoppingBag size={20} />, label: 'All Products' },
-    { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias', active: true },
+    { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
     { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
     { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
-    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
+    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending', active: true },
   ]
 
-  const filtered = cafeterias.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()))
+  const sorted = [...(spending.breakdown || [])].sort((a, b) => b.total - a.total)
 
   return (
     <div className="sd-layout">
@@ -103,56 +109,65 @@ export default function CafeteriasPage() {
         <div className="sd-content">
           <div className="pp-header">
             <div>
-              <h2>Cafeterias</h2>
-              <p>Explore cafeterias across campus and discover menus.</p>
+              <h2>Spending History</h2>
+              <p>Track where your money goes on campus.</p>
             </div>
           </div>
 
-          <div className="cf-search-wrap">
-            <Search size={18} />
-            <input type="text" placeholder="Search cafeterias..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="sp-stats-row">
+            <div className="sp-stat-card">
+              <div className="sp-stat-icon"><Wallet size={24} /></div>
+              <div>
+                <h3>{formatNaira(spending.total_spent)}</h3>
+                <p>Total Spent</p>
+              </div>
+            </div>
+            <div className="sp-stat-card">
+              <div className="sp-stat-icon"><Package size={24} /></div>
+              <div>
+                <h3>{spending.total_orders}</h3>
+                <p>Total Orders</p>
+              </div>
+            </div>
+            <div className="sp-stat-card">
+              <div className="sp-stat-icon"><BarChart3 size={24} /></div>
+              <div>
+                <h3>{spending.total_orders > 0 ? formatNaira(Math.round(spending.total_spent / spending.total_orders)) : '₦0'}</h3>
+                <p>Avg. Per Order</p>
+              </div>
+            </div>
           </div>
 
-          <p className="cf-count">Showing <b>{filtered.length}</b> cafeterias</p>
+          <div className="co-box" style={{ marginTop: '25px' }}>
+            <h3><CreditCard size={18} /> Spending by Seller</h3>
 
-          {loading && (
-            <div className="pp-state">
-              <div className="pp-spinner" />
-              <p>Loading cafeterias...</p>
-            </div>
-          )}
+            {sorted.length === 0 && (
+              <div className="pp-state"><p>No spending data yet.</p></div>
+            )}
 
-          {!loading && (
-            <div className="cf-grid">
-              {filtered.map((cafe) => (
-                <Link to={`/student/cafeteria/${cafe.id}`} key={cafe.id} className="cf-card">
-                  <div className="cf-card-img">
-                    {cafe.image
-                      ? <img src={cafe.image} alt={cafe.name} />
-                      : <div className="cf-img-placeholder"><UtensilsCrossed size={36} /></div>
-                    }
-                    <span className={`cf-status ${cafe.status?.toLowerCase() === 'open' ? 'open' : 'closed'}`}>
-                      {cafe.status || 'Open'}
-                    </span>
-                    <button className="pp-wishlist" onClick={(e) => e.preventDefault()}>
-                      <Heart size={16} />
-                    </button>
+            {sorted.map((item, index) => {
+              const percent = spending.total_spent > 0
+                ? Math.round((item.total / spending.total_spent) * 100)
+                : 0
+              return (
+                <div key={index} className="sp-breakdown-item">
+                  <div className="sp-breakdown-header">
+                    <div className="sp-seller-info">
+                      <div className="sp-seller-avatar">{item.seller_name[0].toUpperCase()}</div>
+                      <span>{item.seller_name}</span>
+                    </div>
+                    <div className="sp-breakdown-right">
+                      <strong>{formatNaira(item.total)}</strong>
+                      <span className="sp-percent">{percent}%</span>
+                    </div>
                   </div>
-                  <div className="cf-card-body">
-                    <h4>{cafe.name}</h4>
-                    <button className="cf-menu-btn">View Menu →</button>
+                  <div className="sp-bar-track">
+                    <div className="sp-bar-fill" style={{ width: `${percent}%` }} />
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {!loading && filtered.length === 0 && (
-            <div className="pp-state">
-              <UtensilsCrossed size={48} />
-              <p>No cafeterias found.</p>
-            </div>
-          )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 

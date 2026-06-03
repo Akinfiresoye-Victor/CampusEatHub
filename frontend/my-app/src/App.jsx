@@ -6,6 +6,11 @@ import ProductsPage from './pages/student/ProductsPage'
 import CafeteriasPage from './pages/student/CafeteriasPage'
 import CafeteriaMenuPage from './pages/student/CafeteriaMenuPage'
 import CartPage from './pages/student/CartPage'
+import CheckoutPage from './pages/student/CheckoutPage'
+import OrdersPage from './pages/student/OrdersPage'
+import OrderDetailPage from './pages/student/OrderDetailPage'
+import SpendingPage from './pages/student/SpendingPage'
+import VendorPage from './pages/student/VendorPage'
 
 // ProtectedRoute temporarily disabled for frontend development
 function ProtectedRoute({ children }) {
@@ -20,12 +25,17 @@ function Page({ name }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/student/vendor" element={<ProtectedRoute><VendorPage /></ProtectedRoute>} />
+      <Route path="/student/spending" element={<ProtectedRoute><SpendingPage /></ProtectedRoute>} />
+      <Route path="/student/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+<Route path="/student/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
       {/* Public */}
       <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
       {/* Student */}
+      <Route path="/student/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
       <Route path="/student/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
       <Route path="/student/cafeteria/:id" element={<ProtectedRoute><CafeteriaMenuPage /></ProtectedRoute>} />
       <Route path="/student/cafeterias" element={<ProtectedRoute><CafeteriasPage /></ProtectedRoute>} />
