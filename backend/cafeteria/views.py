@@ -16,13 +16,10 @@ User = get_user_model()
 
 #api endpoint for getting the menu of a particular cafeteria and also handling the creation of new menu
 def get_cafeteria_menu(request):
-    auth_error = check_role_guard(request)
+    auth_error = check_role_guard(request, required_role='cafeteria')
     if auth_error:
         return auth_error
 
-    # Extra role check — this endpoint is cafeteria-only
-    if request.user.role != 'cafeteria':
-        return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
 
     if request.method == "GET":
         try:
@@ -183,12 +180,10 @@ def manage_cafeteria_product(request, product_id):
 
 # API endpoint that query and get all the orders goten from students
 def cafeteria_orders(request):
-    auth_error = check_role_guard(request)
+    auth_error = check_role_guard(request, required_role='cafeteria')
     if auth_error:
         return auth_error
 
-    if request.user.role != 'cafeteria':
-        return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
 
     if request.method == 'GET':
         try:
@@ -240,12 +235,10 @@ def cafeteria_orders(request):
 
 # API endpoint that checkes and update the status of a meal
 def cafeteria_order_status(request, order_id):
-    auth_error = check_role_guard(request)
+    auth_error = check_role_guard(request, required_role='cafeteria')
     if auth_error:
         return auth_error
 
-    if request.user.role != 'cafeteria':
-        return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
 
     if request.method == 'PATCH':
         try:
