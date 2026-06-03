@@ -16,57 +16,71 @@ from shop.utils import check_role_guard
 @csrf_exempt
 def login_user(request):
     if request.user.is_authenticated:
-        return JsonResponse({'success': True, 'message': 'Youre already logged in '}, status=200)
+        return JsonResponse({'success': True, 'message': 'You are already logged in'}, status=200)
+
     if request.method != "POST":
-        return JsonResponse({"detail": "Method not allowed."}, status=405)
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
     try:
-        if request.method == "POST":
-            data = json.loads(request.body)
-            
-            # 1. Grab whatever the user typed in the identifier box (could be username OR email)
-            login_identifier = data.get('username')  
-            password = data.get('password')
-            
-            # 2. Check if they typed an email address
-            if "@" in login_identifier:
-                try:
-                    # Look up the user by email, and get their actual username string
-                    user_obj = User.objects.get(email=login_identifier)
-                    username_to_auth = user_obj.username
-                except User.DoesNotExist:
-                    # If the email isn't in the database, pass the raw input 
-                    # so authenticate() handles the failure gracefully
-                    username_to_auth = login_identifier
-            else:
-                # If there's no "@", assume they typed a standard username
-                username_to_auth = login_identifier
-            
-            # 3. Authenticate using the resolved username string
-            user = authenticate(request, username=username_to_auth, password=password)
-            
-            if user is not None:
-                login(request, user)
-                
-                # Use user.role instead of request.user.role here (it's safer immediately after login)
-                if request.user.role == 'student':
-                    return JsonResponse({'success': True, 'message': f'Welcome back, {request.user.username}!'}, status=200)
-                elif request.user.role == 'cafeteria':
-                    #TODO adjust the message
-                    return JsonResponse({'success': True, 'message': f'Welcome back, {request.user.email}!'}, status=200)
-                else:
-                    return JsonResponse({'success': True, 'message': f'Welcome back, {user.username}!'})
-            else:
-                print('Wrong password')
-                return JsonResponse({'success': False, 'error': 'Invalid username/email or password. Please try again.'}, status=400)
-        else:
-            return JsonResponse({'success': True,'form_fields': ['username', 'password']}, status=200)
-        
-    except Exception as e:
-        # It's always helpful to print the actual error to your console while building!
-        print(f"Login error: {e}")
-        return JsonResponse({'success':False,'error': "Something went wrong"}, status=500)
+        data = json.loads(request.body)
 
+        # Accept either 'username' or 'email' as the key from the frontend
+        # Cafeteria users only have email, so the frontend might send 'email' instead of 'username'
+        login_identifier = data.get('username') or data.get('email')
+        password = data.get('password')
+
+        # Validate both fields exist before doing anything else
+        if not login_identifier:
+            return JsonResponse({'success': False, 'error': 'Username or email is required'}, status=400)
+        if not password:
+            return JsonResponse({'success': False, 'error': 'Password is required'}, status=400)
+
+        # Resolve the identifier to a username string that authenticate() can use
+        if "@" in login_identifier:
+            try:
+                user_obj = User.objects.get(email=login_identifier)
+                username_to_auth = user_obj.username
+            except User.DoesNotExist:
+                # Email not found — let authenticate() fail gracefully with wrong credentials
+                return JsonResponse({'success': False, 'error': 'Invalid email or password'}, status=400)
+        else:
+            username_to_auth = login_identifier
+
+        user = authenticate(request, username=username_to_auth, password=password)
+
+        if user is not None:
+            login(request, user)
+
+            
+            if request.user.role == 'student':
+                return JsonResponse({
+                    'success': True,
+                    'role': request.user.role,
+                    'message': f'Welcome back, {user.username}!'
+                }, status=200)
+            elif request.user.role == 'cafeteria':
+                return JsonResponse({
+                    'success': True,
+                    'role': request.user.role,
+                    'message': f'Welcome back, {user.email}!'
+                }, status=200)
+            else:
+                return JsonResponse({
+                    'success': True,
+                    'role': request.user.role,
+                    'message': f'Welcome back, {user.username}!'
+                }, status=200)
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid username/email or password'
+            }, status=400)
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON body'}, status=400)
+    except Exception as e:
+        print(f"Login error: {e}")
+        return JsonResponse({'success': False, 'error': 'Something went wrong'}, status=500)
 
 
 @csrf_exempt
@@ -93,7 +107,7 @@ def register_student(request):
             if form.is_valid():
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
-                user.role='student'
+                request.user.role='student'
                 user.save()
                 StudentData.objects.create(
                     student=user,
@@ -133,7 +147,7 @@ def register_cafeteria(request):
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
                 user.username=uuid.uuid4()
-                user.role='cafeteria'
+                request.user.role='cafeteria'
                 user.save()
                 buisness_name=cleaned['business_name']
                 CafeteriaData.objects.create(
@@ -170,11 +184,11 @@ def me(request):
     data = {
         "id": user.id,
         "username": user.username,
-        "role": user.role,
+        "role": request.user.role,
         "email": user.email,
     }
 
-    if user.role == "student":
+    if request.user.role == "student":
         try:
             profile = StudentData.objects.get(student=user)
             data["full_name"] = profile.full_name
@@ -187,7 +201,7 @@ def me(request):
             data["brand_name"] = None
             data["pic_url"] = None
 
-    elif user.role == "cafeteria":
+    elif request.user.role == "cafeteria":
         try:
             profile = CafeteriaData.objects.get(cafeteria=user)
             data["cafeteria_name"] = profile.buisness_name
