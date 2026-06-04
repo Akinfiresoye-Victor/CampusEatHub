@@ -56,7 +56,7 @@ export default function CafeteriasPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Campus<b></b>Connect</span>}
+          {sidebarOpen && <span>Campus<b>Connect</b></span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
