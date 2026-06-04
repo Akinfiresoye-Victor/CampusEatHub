@@ -4,7 +4,7 @@ import { useAuthStore } from '../../stores/useAuthStore'
 import { useCartStore } from '../../stores/useCartStore'
 import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   LogOut, Menu, Search, ShoppingCart,
@@ -52,7 +52,6 @@ export default function CheckoutPage() {
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
     { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
     { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
-    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
   const displayItems = items || []
@@ -63,7 +62,7 @@ export default function CheckoutPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b></b>Connect</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -94,7 +93,6 @@ export default function CheckoutPage() {
           </form>
           <div className="sd-topbar-right">
             <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
             <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>

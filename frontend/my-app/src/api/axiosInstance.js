@@ -9,7 +9,10 @@ const axiosInstance = axios.create({
 // Request interceptor — attach CSRF token to all non-GET requests
 axiosInstance.interceptors.request.use((config) => {
   if (config.method && !['get', 'head', 'options'].includes(config.method.toLowerCase())) {
-    config.headers['X-CSRFToken'] = getCsrfToken();
+    const token = getCsrfToken();
+    if (token) {
+      config.headers['X-CSRFToken'] = token;
+    }
   }
   return config;
 });

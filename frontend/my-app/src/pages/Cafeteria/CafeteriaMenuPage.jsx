@@ -9,10 +9,10 @@ import {
   deleteMenuItem
 } from '../../api/cafeteriaApi'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import CafeteriaAIChatBubble from '../../components/CafeteriaAIChatBubble'
 import {
   Home, UtensilsCrossed, ClipboardList, BarChart3,
-  LogOut, Menu, Search, CircleHelp, Settings
+  LogOut, Menu, Search, CheckCircle, XCircle
 } from 'lucide-react'
 
 export default function CafeteriaMenuPage() {
@@ -30,17 +30,22 @@ export default function CafeteriaMenuPage() {
   const [search, setSearch] = useState('')
   const fileRef = useRef()
 
-  const [form, setForm] = useState({ name: '', price: '', category: '' })
+  const [form, setForm] = useState({ name: '', price: '' })
 
   useEffect(() => {
     setLoading(true)
     getCafeteriaMenu()
       .then((res) => {
-        if (res.data.success && res.data.data?.length > 0) {
-          setMenuItems(res.data.data)
+        if (res.data.success && res.data.products) {
+          const mapped = (res.data.products || []).map((item) => ({
+            ...item,
+            available: item.is_available,
+            image: item.image_url,
+          }))
+          setMenuItems(mapped)
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }, [])
 
@@ -51,13 +56,13 @@ export default function CafeteriaMenuPage() {
 
   const openAddModal = () => {
     setEditItem(null)
-    setForm({ name: '', price: '', category: '' })
+    setForm({ name: '', price: '' })
     setShowModal(true)
   }
 
   const openEditModal = (item) => {
     setEditItem(item)
-    setForm({ name: item.name, price: item.price, category: item.category || '' })
+    setForm({ name: item.name, price: item.price })
     setShowModal(true)
   }
 
@@ -68,7 +73,7 @@ export default function CafeteriaMenuPage() {
       const data = new FormData()
       data.append('name', form.name)
       data.append('price', form.price)
-      data.append('category', form.category)
+
       if (fileRef.current?.files[0]) {
         data.append('image', fileRef.current.files[0])
       }
@@ -76,8 +81,13 @@ export default function CafeteriaMenuPage() {
       if (editItem) {
         const res = await updateMenuItem(editItem.id, data)
         if (res.data.success) {
-          setMenuItems((prev) => prev.map((i) => i.id === editItem.id ? res.data.data : i))
-          showToast('Item updated!')
+          const mappedProd = {
+            ...res.data.product,
+            available: res.data.product.is_available,
+            image: res.data.product.image_url,
+          }
+          setMenuItems((prev) => prev.map((i) => i.id === editItem.id ? mappedProd : i))
+          showToast('Menu item updated!')
           setShowModal(false)
         } else {
           showToast(res.data.error || 'Failed to update item.')
@@ -85,8 +95,13 @@ export default function CafeteriaMenuPage() {
       } else {
         const res = await addMenuItem(data)
         if (res.data.success) {
-          setMenuItems((prev) => [...prev, res.data.data])
-          showToast('Item added!')
+          const mappedProd = {
+            ...res.data.product,
+            available: res.data.product.is_available,
+            image: res.data.product.image_url,
+          }
+          setMenuItems((prev) => [...prev, mappedProd])
+          showToast('Menu item added!')
           setShowModal(false)
         } else {
           showToast(res.data.error || 'Failed to add item.')
@@ -115,15 +130,10 @@ export default function CafeteriaMenuPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this menu item?')) return
     setDeleting(id)
-    try { await deleteMenuItem(id) } catch {}
+    try { await deleteMenuItem(id) } catch { }
     setMenuItems((prev) => prev.filter((i) => i.id !== id))
     setDeleting(null)
     showToast('Item deleted.')
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
   }
 
   const sidebarLinks = [
@@ -133,7 +143,7 @@ export default function CafeteriaMenuPage() {
     { to: '/cafeteria/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
   ]
 
-  const filtered = menuItems.filter((i) =>
+  const filtered = (menuItems || []).filter((i) =>
     i.name?.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -142,7 +152,7 @@ export default function CafeteriaMenuPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b></b>Connect</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -172,7 +182,7 @@ export default function CafeteriaMenuPage() {
           <div className="sd-topbar-right">
             <Link to="/cafeteria/orders" className="sd-top-icon"><span>📋</span><small>Orders</small></Link>
             <div className="sd-avatar">
-              <span>{(user?.full_name || 'C')[0].toUpperCase()}</span>
+              <span>{(user?.owner_name || 'C')[0].toUpperCase()}</span>
               <small>Cafeteria Owner ▾</small>
             </div>
           </div>
@@ -195,13 +205,13 @@ export default function CafeteriaMenuPage() {
               <span>🗂️</span>
               <div><strong>{menuItems.length}</strong><small>Total Items</small></div>
             </div>
-            <div className="vendor-stat">
-              <span>✅</span>
-              <div><strong>{menuItems.filter(i => i.available).length}</strong><small>Available</small></div>
+            <div className="cm-stat">
+              <CheckCircle size={22} />
+              <div><strong>{(menuItems || []).filter(i => i.available).length}</strong><small>Available</small></div>
             </div>
-            <div className="vendor-stat">
-              <span>❌</span>
-              <div><strong>{menuItems.filter(i => !i.available).length}</strong><small>Unavailable</small></div>
+            <div className="cm-stat">
+              <XCircle size={22} />
+              <div><strong>{(menuItems || []).filter(i => !i.available).length}</strong><small>Unavailable</small></div>
             </div>
           </div>
 
@@ -222,7 +232,7 @@ export default function CafeteriaMenuPage() {
                   </div>
                   <div className="vendor-card-body">
                     <h4>{item.name}</h4>
-                    <p>{item.category || 'General'}</p>
+
                     <strong>{formatNaira(item.price)}</strong>
                     <div className="vendor-actions">
                       <button
@@ -268,11 +278,7 @@ export default function CafeteriaMenuPage() {
                 <span className="icon">💰</span>
                 <input type="number" name="price" placeholder="e.g. 1500" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
               </div>
-              <label>Category</label>
-              <div className="input-group">
-                <span className="icon">📂</span>
-                <input type="text" name="category" placeholder="e.g. Lunch, Snacks, Beverages" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-              </div>
+
               <label>Image</label>
               <div className="input-group">
                 <span className="icon">🖼️</span>
@@ -286,7 +292,7 @@ export default function CafeteriaMenuPage() {
         </div>
       )}
 
-      <AIChatBubble />
+      <CafeteriaAIChatBubble />
     </div>
   )
 }

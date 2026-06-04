@@ -25,7 +25,7 @@ export const useAuthStore = create((set) => ({
   // Called on logout button click
   logout: async () => {
     try {
-      await axiosInstance.post('/api/auth/logout/');
+      await axiosInstance.post('/api/auth/logout_user/');
     } finally {
       set({ user: null });
       window.location.href = '/login';

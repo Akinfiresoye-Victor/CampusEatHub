@@ -13,7 +13,7 @@ export const useProductStore = create((set) => ({
     try {
       const res = await axiosInstance.get('/api/products/');
       if (res.data.success) {
-        set({ products: res.data.data, isLoading: false });
+        set({ products: res.data.products || [], isLoading: false });
       } else {
         set({ error: res.data.error || 'Failed to load products.', isLoading: false });
       }
@@ -27,7 +27,7 @@ export const useProductStore = create((set) => ({
     try {
       const res = await axiosInstance.get('/api/cafeterias/');
       if (res.data.success) {
-        set({ cafeterias: res.data.data, isLoading: false });
+        set({ cafeterias: res.data.cafeterias || [], isLoading: false });
       } else {
         set({ error: res.data.error || 'Failed to load cafeterias.', isLoading: false });
       }
@@ -41,7 +41,7 @@ export const useProductStore = create((set) => ({
     try {
       const res = await axiosInstance.get(`/api/cafeterias/${cafeteriaId}/menu/`);
       if (res.data.success) {
-        set({ cafeteriaMenu: res.data.data, isLoading: false });
+        set({ cafeteriaMenu: res.data.products || [], isLoading: false });
       } else {
         set({ error: res.data.error || 'Failed to load menu.', isLoading: false });
       }

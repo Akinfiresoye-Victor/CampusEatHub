@@ -41,7 +41,7 @@ export default function Navbar() {
             <Link to="/student/cafeterias" className="nav-link" onClick={() => setMenuOpen(false)}>🍽️ Cafeterias</Link>
             <Link to="/student/cart" className="nav-link" onClick={() => setMenuOpen(false)}>🛒 Cart</Link>
             <Link to="/student/orders" className="nav-link" onClick={() => setMenuOpen(false)}>📦 Orders</Link>
-            <Link to="/student/spending" className="nav-link" onClick={() => setMenuOpen(false)}>💰 Spending</Link>
+
             <Link to="/student/vendor" className="nav-link" onClick={() => setMenuOpen(false)}>🏪 My Shop</Link>
             <Link to="/student/ai-recommender" className="nav-link" onClick={() => setMenuOpen(false)}>🤖 AI Meals</Link>
           </>

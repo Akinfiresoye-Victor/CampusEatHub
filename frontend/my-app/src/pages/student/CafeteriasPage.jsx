@@ -2,7 +2,17 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { getCafeterias } from '../../api/productsApi'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
+
+const BUSYNESS_BADGES = {
+  quiet: { label: 'Quiet', dot: '🟢', bg: '#dcfce7', color: '#166534' },
+  moderate: { label: 'Moderate', dot: '🟡', bg: '#fef3c7', color: '#92400e' },
+  busy: { label: 'Busy now', dot: '🔴', bg: '#fee2e2', color: '#991b1b' },
+}
+
+function getBusynessBadge(status) {
+  return BUSYNESS_BADGES[status] || BUSYNESS_BADGES.quiet
+}
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   LogOut, Menu, Search, ShoppingCart, AlertTriangle
@@ -21,7 +31,7 @@ export default function CafeteriasPage() {
     getCafeterias()
       .then((res) => {
         if (res.data.success) {
-          setCafeterias(res.data.data)
+          setCafeterias(res.data.cafeterias || [])
         } else {
           setError(res.data.error || 'Failed to load cafeterias.')
         }
@@ -36,10 +46,9 @@ export default function CafeteriasPage() {
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias', active: true },
     { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
     { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
-    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
-  const filtered = cafeterias.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()))
+  const filtered = (cafeterias || []).filter((c) => c.business_name?.toLowerCase().includes(search.toLowerCase()) || c.owner_name?.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="sd-layout">
@@ -47,7 +56,7 @@ export default function CafeteriasPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b></b>Connect</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -78,7 +87,6 @@ export default function CafeteriasPage() {
           </form>
           <div className="sd-topbar-right">
             <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
             <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>
@@ -122,14 +130,21 @@ export default function CafeteriasPage() {
               {filtered.map((cafe) => (
                 <Link to={`/student/cafeteria/${cafe.id}`} key={cafe.id} className="cf-card">
                   <div className="cf-card-img">
-                    {cafe.image
-                      ? <img src={cafe.image} alt={cafe.name} />
+                    {cafe.logo
+                      ? <img src={cafe.logo} alt={cafe.business_name || 'Cafeteria'} />
                       : <div className="cf-img-placeholder"><UtensilsCrossed size={36} /></div>
                     }
-                    <span className="cf-status open">Open</span>
+                    {(() => {
+                      const badge = getBusynessBadge(cafe.busyness_status)
+                      return (
+                        <span className="cf-status" style={{ background: badge.bg, color: badge.color, borderColor: badge.color }}>
+                          {badge.dot} {badge.label}
+                        </span>
+                      )
+                    })()}
                   </div>
                   <div className="cf-card-body">
-                    <h4>{cafe.name || cafe.username}</h4>
+                    <h4>{cafe.business_name || cafe.owner_name || 'Cafeteria'}</h4>
                     <button className="cf-menu-btn">View Menu →</button>
                   </div>
                 </Link>

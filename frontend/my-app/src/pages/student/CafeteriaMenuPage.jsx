@@ -4,14 +4,23 @@ import { useAuthStore } from '../../stores/useAuthStore'
 import { useCartStore } from '../../stores/useCartStore'
 import { getCafeteriaMenu } from '../../api/productsApi'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
+
+const BUSYNESS_BADGES = {
+  quiet: { label: 'Quiet', dot: '🟢', bg: '#dcfce7', color: '#166534' },
+  moderate: { label: 'Moderate', dot: '🟡', bg: '#fef3c7', color: '#92400e' },
+  busy: { label: 'Busy now', dot: '🔴', bg: '#fee2e2', color: '#991b1b' },
+}
+
+function getBusynessBadge(status) {
+  return BUSYNESS_BADGES[status] || BUSYNESS_BADGES.quiet
+}
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   LogOut, Menu, Search, ShoppingCart,
   CheckCircle, XCircle, AlertTriangle
 } from 'lucide-react'
 
-const CATEGORIES = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Beverages']
 
 export default function CafeteriaMenuPage() {
   const { user, logout } = useAuthStore()
@@ -21,9 +30,10 @@ export default function CafeteriaMenuPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [menuItems, setMenuItems] = useState([])
   const [cafeteriaName, setCafeteriaName] = useState('')
+  const [busynessStatus, setBusynessStatus] = useState('quiet')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeCategory, setActiveCategory] = useState('All')
+
   const [addingId, setAddingId] = useState(null)
   const [toast, setToast] = useState('')
   const [cartError, setCartError] = useState('')
@@ -34,9 +44,14 @@ export default function CafeteriaMenuPage() {
     getCafeteriaMenu(id)
       .then((res) => {
         if (res.data.success) {
-          setMenuItems(res.data.data)
-          // Try to get cafeteria name from first item or data
-          if (res.data.cafeteria_name) setCafeteriaName(res.data.cafeteria_name)
+          const mapped = (res.data.products || []).map((item) => ({
+            ...item,
+            available: item.is_available,
+            image: item.image_url,
+          }))
+          setMenuItems(mapped)
+          if (res.data.cafeteria?.business_name) setCafeteriaName(res.data.cafeteria.business_name)
+          if (res.data.cafeteria?.busyness_status) setBusynessStatus(res.data.cafeteria.busyness_status)
         } else {
           setError(res.data.error || 'Failed to load menu.')
         }
@@ -75,13 +90,10 @@ export default function CafeteriaMenuPage() {
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias', active: true },
     { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
     { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
-    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
-  const filtered = menuItems.filter((item) => {
-    const matchCategory = activeCategory === 'All' || item.category === activeCategory
-    const matchSearch = item.name?.toLowerCase().includes(search.toLowerCase())
-    return matchCategory && matchSearch
+  const filtered = (menuItems || []).filter((item) => {
+    return item.name?.toLowerCase().includes(search.toLowerCase())
   })
 
   const available = filtered.filter((i) => i.available)
@@ -94,7 +106,7 @@ export default function CafeteriaMenuPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b></b>Connect</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -126,7 +138,6 @@ export default function CafeteriaMenuPage() {
           </form>
           <div className="sd-topbar-right">
             <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
             <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>
@@ -142,7 +153,14 @@ export default function CafeteriaMenuPage() {
             <div className="cm-hero-info">
               <div className="cm-hero-logo"><UtensilsCrossed size={32} /></div>
               <div>
-                <div className="cm-hero-badge">Open</div>
+                {(() => {
+                  const badge = getBusynessBadge(busynessStatus)
+                  return (
+                    <div className="cm-hero-badge" style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.color}` }}>
+                      {badge.dot} {badge.label}
+                    </div>
+                  )
+                })()}
                 <h2>{cafeteriaName || 'Cafeteria Menu'}</h2>
               </div>
             </div>
@@ -158,13 +176,7 @@ export default function CafeteriaMenuPage() {
             </div>
           )}
 
-          <div className="cm-tabs">
-            {CATEGORIES.map((cat) => (
-              <button key={cat} className={`cm-tab ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
-                {cat}
-              </button>
-            ))}
-          </div>
+
 
           {loading && (
             <div className="pp-state">
@@ -194,7 +206,7 @@ export default function CafeteriaMenuPage() {
                     </div>
                     <div className="cm-card-body">
                       <h4>{item.name}</h4>
-                      <p className="cm-category">{item.category}</p>
+
                       <p className="cm-price">{formatNaira(item.price)}</p>
                       <button className="cm-add-btn" onClick={() => handleAddToCart(item.id)} disabled={addingId === item.id}>
                         {addingId === item.id ? 'Adding...' : '+ Add to Cart'}
@@ -221,7 +233,7 @@ export default function CafeteriaMenuPage() {
                     </div>
                     <div className="cm-card-body">
                       <h4>{item.name}</h4>
-                      <p className="cm-category">{item.category}</p>
+
                       <p className="cm-price">{formatNaira(item.price)}</p>
                       <button className="cm-add-btn" disabled>Not Available</button>
                     </div>

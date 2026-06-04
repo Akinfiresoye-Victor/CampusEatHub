@@ -20,11 +20,13 @@ export default function LoginPage() {
     try {
       const res = await loginApi({ username, password })
       if (res.data.success) {
-        setUser(res.data.data)
-        const role = res.data.data.role
-        if (role === 'student') navigate('/student/dashboard')
+        const role = res.data.role
+        // Call checkSession to fetch full user profile via /api/auth/me/
+        await useAuthStore.getState().checkSession()
+
+        if (role === 'student') navigate('/student/dashboard/')
         else if (role === 'cafeteria') navigate('/cafeteria/dashboard')
-        else navigate('/login')
+        else navigate('/')
       } else {
         setError(res.data.error || 'Login failed. Please check your credentials.')
       }
@@ -44,7 +46,7 @@ export default function LoginPage() {
         <img src="/elizade.png" alt="Elizade University" className="logo" />
 
         {/* Title */}
-        <h1>Byte<span>N</span>Bite</h1>
+        <h1>Campus <span>Connect</span></h1>
         <p className="subtitle">Welcome back! Please sign in to your account</p>
 
         {/* Error */}

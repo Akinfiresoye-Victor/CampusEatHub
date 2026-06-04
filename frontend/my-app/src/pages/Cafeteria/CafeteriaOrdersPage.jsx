@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { useCafeteriaStore } from '../../stores/useCafeteriaStore'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import CafeteriaAIChatBubble from '../../components/CafeteriaAIChatBubble'
 import {
   Home, UtensilsCrossed, ClipboardList, BarChart3,
   LogOut, Menu, Search, AlertTriangle, CheckCircle, Package
@@ -68,14 +68,14 @@ export default function CafeteriaOrdersPage() {
     { to: '/cafeteria/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
   ]
 
-  const filtered = activeTab === 'all' ? orders : orders.filter((o) => o.status === activeTab)
+  const filtered = activeTab === 'all' ? (orders || []) : (orders || []).filter((o) => o.status === activeTab)
 
   return (
     <div className="sd-layout">
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b></b>Connect</span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -105,7 +105,7 @@ export default function CafeteriaOrdersPage() {
           <div className="sd-topbar-right">
             <Link to="/cafeteria/menu" className="sd-top-icon"><span>🍴</span><small>My Cafeteria</small></Link>
             <div className="sd-avatar">
-              <span>{(user?.full_name || 'C')[0].toUpperCase()}</span>
+              <span>{(user?.owner_name || 'C')[0].toUpperCase()}</span>
               <small>Cafeteria Owner ▾</small>
             </div>
           </div>
@@ -183,59 +183,65 @@ export default function CafeteriaOrdersPage() {
                       </span>
                       <strong style={{ color: '#4f46e5' }}>{formatNaira(order.total)}</strong>
                     </div>
-                  </div>
+</div>
 
-                  <div className="caf-order-card-body">
-                    <p><span>🍛 Items:</span> {items}</p>
-                    <p><span>{order.delivery_type === 'delivery' ? '🚚' : '🏪'} Type:</span> {order.delivery_type === 'delivery' ? 'Delivery' : 'Pickup'}</p>
-                  </div>
+                   <div className="caf-order-card-body">
+                     <p><span>🍛 Items:</span> {items}</p>
+                     <p><span>{order.delivery_type === 'delivery' ? '🚚' : '🏪'} Type:</span> {order.delivery_type === 'delivery' ? 'Delivery' : 'Pickup'}</p>
+                   </div>
 
-                  {/* ACTION BUTTONS */}
-                  <div className="caf-order-actions">
-                    {order.status === 'pending' && (
-                      <>
-                        <button
-                          className="caf-action-btn processing"
-                          onClick={() => handleStatusUpdate(order.id, 'processing')}
-                          disabled={updating === order.id}
-                        >
-                          ⚙️ Start Processing
-                        </button>
-                        <button
-                          className="caf-action-btn cancel"
-                          onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                          disabled={updating === order.id}
-                        >
-                          ❌ Cancel Order
-                        </button>
-                      </>
-                    )}
-                    {order.status === 'processing' && order.delivery_type === 'pickup' && (
-                      <button
-                        className="caf-action-btn ready"
-                        onClick={() => handleStatusUpdate(order.id, 'ready')}
-                        disabled={updating === order.id}
-                      >
-                        ✅ Mark as Ready
-                      </button>
-                    )}
-                    {order.status === 'processing' && order.delivery_type === 'delivery' && (
-                      <button
-                        className="caf-action-btn delivered"
-                        onClick={() => handleStatusUpdate(order.id, 'delivered')}
-                        disabled={updating === order.id}
-                      >
-                        📦 Mark as Delivered
-                      </button>
-                    )}
-                  </div>
-                </div>
+                   {/* ACTION BUTTONS */}
+                   <div className="caf-order-actions">
+                     {order.status === 'pending' && (
+                       <>
+                         <button
+                           className="caf-action-btn processing"
+                           onClick={() => handleStatusUpdate(order.id, 'processing')}
+                           disabled={updating === order.id}
+                         >
+                           ⚙️ Mark as Preparing
+                         </button>
+                         <button
+                           className="caf-action-btn cancel"
+                           onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                           disabled={updating === order.id}
+                         >
+                           ❌ Cancel Order
+                         </button>
+                       </>
+                     )}
+                     {order.status === 'processing' && (
+                       <button
+                         className="caf-action-btn ready"
+                         onClick={() => handleStatusUpdate(order.id, 'ready')}
+                         disabled={updating === order.id}
+                       >
+                         ✅ Mark as Ready
+                       </button>
+                     )}
+                     {order.status === 'ready' && (
+                       <button
+                         className="caf-action-btn delivered"
+                         onClick={() => handleStatusUpdate(order.id, 'delivered')}
+                         disabled={updating === order.id}
+                       >
+                         📦 Mark as Delivered
+                       </button>
+                     )}
+                     {order.status === 'delivered' && (
+                       <span className="order-status-badge" style={{ background: '#f3f4f6', color: '#6b7280' }}>
+                         Delivered
+                       </span>
+                     )}
+                   </div>
+                 </div>
               )
             })}
           </div>
         </div>
       </div>
 
+      <CafeteriaAIChatBubble />
     </div>
   )
 }

@@ -54,42 +54,17 @@ export default function CafeteriaAIChatBubble() {
     setLoading(true)
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('http://localhost:8000/api/cafeteria/ai/assistant/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `You are the ByteNBite AI Assistant for a cafeteria owner at Elizade University, Ilara-Mokin, Ondo State, Nigeria.
-
-You help cafeteria owners with:
-- 📦 Tracking and managing incoming orders (pending, processing, ready, delivered)
-- 💰 Understanding daily, weekly, and monthly revenue in Naira (₦)
-- 🍛 Identifying best-selling menu items
-- 📊 Business analytics and growth insights
-- 🍴 Menu management advice (what to add, remove, or promote)
-- 👥 Customer insights and order patterns
-
-Rules:
-- Be professional but friendly
-- Use relevant emojis sparingly
-- Currency is always Nigerian Naira (₦)
-- Give actionable business advice
-- Keep responses concise and data-focused
-- When asked about orders or revenue, give specific numbers if available
-- Suggest ways to improve sales and customer satisfaction`,
-          messages: [
-            ...messages
-              .filter((m) => m.role === 'user' || m.id !== 1)
-              .map((m) => ({ role: m.role, content: m.text })),
-            { role: 'user', content: userText },
-          ],
-        }),
+        credentials: 'include',
+        body: JSON.stringify({ question: userText }),
       })
       const data = await response.json()
       const replyText =
-        data.content?.map((b) => b.text || '').join('') ||
-        "Sorry, I couldn't process that. Please try again."
+        data.success
+          ? data.answer
+          : (data.error || "Sorry, I couldn't process that. Please try again.")
       setMessages((prev) => [
         ...prev,
         {

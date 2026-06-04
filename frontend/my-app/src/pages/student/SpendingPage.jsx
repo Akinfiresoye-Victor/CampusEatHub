@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   LogOut, Menu, Search, ShoppingCart,

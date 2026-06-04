@@ -13,7 +13,12 @@ export const useOrderStore = create((set) => ({
     try {
       const res = await axiosInstance.get('/api/student/orders/');
       if (res.data.success) {
-        set({ orders: res.data.data, isLoading: false });
+        const mappedOrders = (res.data.orders || []).map((order) => ({
+          ...order,
+          seller_name: order.seller_full_name,
+          total: order.total_amount,
+        }));
+        set({ orders: mappedOrders, isLoading: false });
       } else {
         set({ error: res.data.error || 'Failed to load orders.', isLoading: false });
       }
@@ -26,8 +31,20 @@ export const useOrderStore = create((set) => ({
     set({ isLoading: true, error: '' });
     try {
       const res = await axiosInstance.get(`/api/student/orders/${id}/`);
-      if (res.data.success) {
-        set({ currentOrder: res.data.data, isLoading: false });
+      if (res.data.success && res.data.order) {
+        const order = res.data.order;
+        const mappedOrder = {
+          ...order,
+          seller_name: order.seller_full_name,
+          total: order.total_amount,
+          items: (order.items || []).map((item, index) => ({
+            ...item,
+            id: item.id || index,
+            name: item.product_name,
+            price: Number(item.price_at_time),
+          })),
+        };
+        set({ currentOrder: mappedOrder, isLoading: false });
       } else {
         set({ error: res.data.error || 'Order not found.', isLoading: false });
       }
@@ -40,7 +57,7 @@ export const useOrderStore = create((set) => ({
     try {
       const res = await axiosInstance.post('/api/student/orders/checkout/', { delivery_type: deliveryType });
       if (res.data.success) {
-        return { success: true, data: res.data.data };
+        return { success: true, data: res.data.order };
       }
       return { success: false, error: res.data.error };
     } catch (err) {
@@ -53,7 +70,7 @@ export const useOrderStore = create((set) => ({
     try {
       const res = await axiosInstance.get('/api/student/orders/spending/');
       if (res.data.success) {
-        set({ spending: res.data.data, isLoading: false });
+        set({ spending: { total_spent: res.data.total_spent, total_orders: res.data.total_orders, per_seller_breakdown: res.data.per_seller_breakdown }, isLoading: false });
       } else {
         set({ error: res.data.error || 'Failed to load spending.', isLoading: false });
       }

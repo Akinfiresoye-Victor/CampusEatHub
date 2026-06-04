@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   LogOut, Menu, Search, ShoppingCart,
@@ -11,11 +11,11 @@ import {
 } from 'lucide-react'
 
 const STATUS_CONFIG = {
-  pending:    { bg: '#fef3c7', color: '#d97706', label: 'Pending',    icon: <Clock size={13} /> },
+  pending: { bg: '#fef3c7', color: '#d97706', label: 'Pending', icon: <Clock size={13} /> },
   processing: { bg: '#dbeafe', color: '#1d4ed8', label: 'Processing', icon: <Cog size={13} /> },
-  ready:      { bg: '#dcfce7', color: '#15803d', label: 'Ready',      icon: <CheckCircle size={13} /> },
-  delivered:  { bg: '#f3f4f6', color: '#6b7280', label: 'Delivered',  icon: <Package size={13} /> },
-  cancelled:  { bg: '#fee2e2', color: '#dc2626', label: 'Cancelled',  icon: <XCircle size={13} /> },
+  ready: { bg: '#dcfce7', color: '#15803d', label: 'Ready', icon: <CheckCircle size={13} /> },
+  delivered: { bg: '#f3f4f6', color: '#6b7280', label: 'Delivered', icon: <Package size={13} /> },
+  cancelled: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelled', icon: <XCircle size={13} /> },
 }
 
 export default function OrdersPage() {
@@ -45,12 +45,11 @@ export default function OrdersPage() {
   }, [successMsg])
 
   const sidebarLinks = [
-    { to: '/student/dashboard',  icon: <Home size={20} />,          label: 'Dashboard' },
-    { to: '/student/products',   icon: <ShoppingBag size={20} />,   label: 'All Products' },
+    { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/student/products', icon: <ShoppingBag size={20} />, label: 'All Products' },
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
-    { to: '/student/vendor',     icon: <Store size={20} />,          label: 'My Shop' },
-    { to: '/student/orders',     icon: <Package size={20} />,        label: 'My Orders', active: true },
-    { to: '/student/spending',   icon: <Wallet size={20} />,         label: 'Spending' },
+    { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
+    { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders', active: true },
   ]
 
   const formatDate = (dateStr) => {
@@ -67,7 +66,7 @@ export default function OrdersPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b>Connect</b></span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -101,7 +100,6 @@ export default function OrdersPage() {
           </form>
           <div className="sd-topbar-right">
             <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
             <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>

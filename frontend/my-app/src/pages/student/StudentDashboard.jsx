@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
 
 import {
   Home,
@@ -10,13 +10,10 @@ import {
   Store,
   Package,
   Wallet,
-  CircleHelp,
-  Settings,
   LogOut,
   Search,
   Menu,
   ShoppingCart,
-  Sparkles,
   Clock3,
   ChartColumn
 } from 'lucide-react'
@@ -38,7 +35,6 @@ export default function StudentDashboard() {
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
     { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
     { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
-    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
   const quickCards = [
@@ -46,8 +42,6 @@ export default function StudentDashboard() {
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={24} />, label: 'Cafeterias', desc: 'View cafeteria menus', color: '#f0fdf4', iconBg: '#16a34a' },
     { to: '/student/cart', icon: <ShoppingCart size={24} />, label: 'My Cart', desc: 'View your cart items', color: '#fff7ed', iconBg: '#ea580c' },
     { to: '/student/orders', icon: <Package size={24} />, label: 'My Orders', desc: 'Track your orders', color: '#fdf2f8', iconBg: '#db2777' },
-    { to: '/student/spending', icon: <Wallet size={24} />, label: 'Spending', desc: 'View spending history', color: '#fefce8', iconBg: '#ca8a04' },
-    { to: '/student/ai-recommender', icon: <Sparkles size={24} />, label: 'AI Meal Planner', desc: 'Get AI recommendations', color: '#eff6ff', iconBg: '#2563eb' },
   ]
 
   return (
@@ -57,7 +51,7 @@ export default function StudentDashboard() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b></b>Connect</span>}
         </div>
 
         <nav className="sd-sidebar-nav">
@@ -71,10 +65,6 @@ export default function StudentDashboard() {
 
         <div className="sd-sidebar-bottom">
           <div className="sd-divider" />
-          <Link to="/student/ai-recommender" className="sd-sidebar-link">
-            <span className="sd-link-icon"><Sparkles size={20} /></span>
-            {sidebarOpen && <span className="sd-link-label">AI Meal Planner</span>}
-          </Link>
           <button className="sd-sidebar-link logout" onClick={() => logout()}>
             <span className="sd-link-icon"><LogOut size={20} /></span>
             {sidebarOpen && <span className="sd-link-label">Logout</span>}
@@ -131,10 +121,6 @@ export default function StudentDashboard() {
                   <UtensilsCrossed size={18} />
                   Browse Cafeterias
                 </Link>
-                <Link to="/student/ai-recommender" className="sd-banner-btn outline">
-                  <Sparkles size={18} />
-                  AI Meal Planner
-                </Link>
               </div>
             </div>
             <div className="sd-banner-img">
@@ -180,14 +166,6 @@ export default function StudentDashboard() {
                   </div>
                   <Link to="/student/cafeterias" className="sd-activity-time" style={{ color: '#4f46e5', fontSize: '0.75rem' }}>Go →</Link>
                 </div>
-                <div className="sd-activity-item">
-                  <div className="sd-activity-icon purple">🤖</div>
-                  <div className="sd-activity-text">
-                    <strong>AI Meal Recommender</strong>
-                    <small>Get personalized meal suggestions</small>
-                  </div>
-                  <Link to="/student/ai-recommender" className="sd-activity-time" style={{ color: '#4f46e5', fontSize: '0.75rem' }}>Go →</Link>
-                </div>
               </div>
               <Link to="/student/orders" className="sd-view-all-link">View all orders →</Link>
             </div>
@@ -203,11 +181,7 @@ export default function StudentDashboard() {
                   <Link to="/student/orders"><strong>My Orders</strong></Link>
                   <small>Track status</small>
                 </div>
-                <div className="sd-stat-card green">
-                  <span className="sd-stat-icon">💰</span>
-                  <Link to="/student/spending"><strong>Spending</strong></Link>
-                  <small>View history</small>
-                </div>
+
                 <div className="sd-stat-card orange">
                   <span className="sd-stat-icon">🏪</span>
                   <Link to="/student/vendor"><strong>My Shop</strong></Link>

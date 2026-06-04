@@ -12,7 +12,7 @@ export const useCafeteriaStore = create((set) => ({
     try {
       const res = await axiosInstance.get('/api/cafeteria/menu/');
       if (res.data.success) {
-        set({ menu: res.data.data, isLoading: false });
+        set({ menu: res.data.products || [], isLoading: false });
       } else {
         set({ error: res.data.error || 'Failed to load menu.', isLoading: false });
       }
@@ -25,8 +25,8 @@ export const useCafeteriaStore = create((set) => ({
     try {
       const res = await axiosInstance.post('/api/cafeteria/menu/', formData);
       if (res.data.success) {
-        set((state) => ({ menu: [...state.menu, res.data.data] }));
-        return { success: true, data: res.data.data };
+        set((state) => ({ menu: [...state.menu, res.data.product] }));
+        return { success: true, data: res.data.product };
       }
       return { success: false, error: res.data.error };
     } catch (err) {
@@ -38,8 +38,8 @@ export const useCafeteriaStore = create((set) => ({
     try {
       const res = await axiosInstance.put(`/api/cafeteria/menu/${id}/`, formData);
       if (res.data.success) {
-        set((state) => ({ menu: state.menu.map((i) => i.id === id ? res.data.data : i) }));
-        return { success: true, data: res.data.data };
+        set((state) => ({ menu: state.menu.map((i) => i.id === id ? res.data.product : i) }));
+        return { success: true, data: res.data.product };
       }
       return { success: false, error: res.data.error };
     } catch (err) {
@@ -53,7 +53,7 @@ export const useCafeteriaStore = create((set) => ({
       menu: state.menu.map((i) => i.id === id ? { ...i, available: !i.available } : i),
     }));
     try {
-      const res = await axiosInstance.patch(`/api/cafeteria/menu/${id}/toggle/`);
+      const res = await axiosInstance.patch(`/api/cafeteria/menu/${id}/`);
       if (!res.data.success) {
         // Revert on failure
         set((state) => ({
@@ -87,7 +87,16 @@ export const useCafeteriaStore = create((set) => ({
       const params = statusFilter && statusFilter !== 'all' ? { status: statusFilter } : {};
       const res = await axiosInstance.get('/api/cafeteria/orders/', { params });
       if (res.data.success) {
-        set({ orders: res.data.data, isLoading: false });
+        const mappedOrders = (res.data.orders || []).map((o) => ({
+          ...o,
+          buyer_name: o.buyer_full_name,
+          total: o.total_amount,
+          items: (o.items || []).map((i) => ({
+            ...i,
+            name: i.product_name,
+          })),
+        }));
+        set({ orders: mappedOrders, isLoading: false });
       } else {
         set({ error: res.data.error || 'Failed to load orders.', isLoading: false });
       }

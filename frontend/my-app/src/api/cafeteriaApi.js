@@ -7,3 +7,5 @@ export const toggleMenuItem = (id) => axiosInstance.patch(`/api/cafeteria/menu/$
 export const deleteMenuItem = (id) => axiosInstance.delete(`/api/cafeteria/menu/${id}/`)
 export const getCafeteriaOrders = (status) => axiosInstance.get('/api/cafeteria/orders/', { params: status ? { status } : {} })
 export const updateOrderStatus = (id, status) => axiosInstance.patch(`/api/cafeteria/orders/${id}/status/`, { status })
+export const getCafeteriaStatus = () => axiosInstance.get('/api/cafeteria/status/')
+export const updateCafeteriaStatus = (status) => axiosInstance.patch('/api/cafeteria/status/', { busyness_status: status })

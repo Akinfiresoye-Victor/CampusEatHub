@@ -6,7 +6,7 @@ import {
   toggleVendorProduct, deleteVendorProduct
 } from '../../api/vendorApi'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   LogOut, Menu, Search, ShoppingCart,
@@ -28,15 +28,22 @@ export default function VendorPage() {
   const [search, setSearch] = useState('')
   const fileRef = useRef()
 
-  const [form, setForm] = useState({ name: '', price: '', category: '', image: null })
+  const [form, setForm] = useState({ name: '', price: '', image: null })
 
   useEffect(() => {
     setLoading(true)
     getVendorProducts()
       .then((res) => {
-        if (res.data.success && res.data.data?.length > 0) setProducts(res.data.data)
+        if (res.data.success && res.data.products) {
+          const mapped = (res.data.products || []).map((item) => ({
+            ...item,
+            available: item.is_available,
+            image: item.image_url,
+          }))
+          setProducts(mapped)
+        }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }, [])
 
@@ -44,13 +51,13 @@ export default function VendorPage() {
 
   const openAddModal = () => {
     setEditProduct(null)
-    setForm({ name: '', price: '', category: '', image: null })
+    setForm({ name: '', price: '', image: null })
     setShowModal(true)
   }
 
   const openEditModal = (product) => {
     setEditProduct(product)
-    setForm({ name: product.name, price: product.price, category: product.category || '', image: null })
+    setForm({ name: product.name, price: product.price, image: null })
     setShowModal(true)
   }
 
@@ -63,13 +70,17 @@ export default function VendorPage() {
       const data = new FormData()
       data.append('name', form.name)
       data.append('price', form.price)
-      data.append('category', form.category)
       if (fileRef.current?.files[0]) data.append('image', fileRef.current.files[0])
 
       if (editProduct) {
         const res = await updateVendorProduct(editProduct.id, data)
         if (res.data.success) {
-          setProducts((prev) => prev.map((p) => p.id === editProduct.id ? res.data.data : p))
+          const mappedProd = {
+            ...res.data.product,
+            available: res.data.product.is_available,
+            image: res.data.product.image_url,
+          }
+          setProducts((prev) => prev.map((p) => p.id === editProduct.id ? mappedProd : p))
           showToast('Product updated!')
           setShowModal(false)
         } else {
@@ -78,7 +89,12 @@ export default function VendorPage() {
       } else {
         const res = await addVendorProduct(data)
         if (res.data.success) {
-          setProducts((prev) => [...prev, res.data.data])
+          const mappedProd = {
+            ...res.data.product,
+            available: res.data.product.is_available,
+            image: res.data.product.image_url,
+          }
+          setProducts((prev) => [...prev, mappedProd])
           showToast('Product added!')
           setShowModal(false)
         } else {
@@ -103,7 +119,7 @@ export default function VendorPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return
     setDeleting(id)
-    try { await deleteVendorProduct(id) } catch {}
+    try { await deleteVendorProduct(id) } catch { }
     setProducts((prev) => prev.filter((p) => p.id !== id))
     setDeleting(null)
     showToast('Product deleted.')
@@ -117,10 +133,9 @@ export default function VendorPage() {
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
     { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop', active: true },
     { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders' },
-    { to: '/student/spending', icon: <Wallet size={20} />, label: 'Spending' },
   ]
 
-  const filtered = products.filter((p) => p.name?.toLowerCase().includes(search.toLowerCase()))
+  const filtered = (products || []).filter((p) => p.name?.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="sd-layout">
@@ -128,7 +143,7 @@ export default function VendorPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b>Connect</b></span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -159,7 +174,6 @@ export default function VendorPage() {
           </form>
           <div className="sd-topbar-right">
             <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
             <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>
@@ -186,11 +200,11 @@ export default function VendorPage() {
             </div>
             <div className="vendor-stat">
               <CheckCircle size={22} />
-              <div><strong>{products.filter(p => p.available).length}</strong><small>Available</small></div>
+              <div><strong>{(products || []).filter(p => p.available).length}</strong><small>Available</small></div>
             </div>
             <div className="vendor-stat">
               <XCircle size={22} />
-              <div><strong>{products.filter(p => !p.available).length}</strong><small>Unavailable</small></div>
+              <div><strong>{(products || []).filter(p => !p.available).length}</strong><small>Unavailable</small></div>
             </div>
           </div>
 
@@ -267,12 +281,6 @@ export default function VendorPage() {
               <div className="input-group">
                 <span className="icon"><Wallet size={18} /></span>
                 <input type="number" name="price" placeholder="e.g. 5000" value={form.price} onChange={handleFormChange} required />
-              </div>
-
-              <label>Category</label>
-              <div className="input-group">
-                <span className="icon"><Folder size={18} /></span>
-                <input type="text" name="category" placeholder="e.g. Books, Electronics" value={form.category} onChange={handleFormChange} />
               </div>
 
               <label>Image</label>

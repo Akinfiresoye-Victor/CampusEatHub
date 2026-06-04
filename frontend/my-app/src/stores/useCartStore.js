@@ -12,9 +12,15 @@ export const useCartStore = create((set, get) => ({
     try {
       const res = await axiosInstance.get('/api/student/cart/');
       if (res.data.success) {
+        const mappedItems = (res.data.cart_items || []).map((item) => ({
+          ...item,
+          id: item.cart_item_id,
+          name: item.product_name,
+          image: item.image_url,
+        }));
         set({
-          items: res.data.data.items || [],
-          sellerName: res.data.data.seller_name || '',
+          items: mappedItems,
+          sellerName: res.data.seller_info?.seller_id ? res.data.seller_info.seller_id : '',
           isLoading: false,
         });
       } else {
@@ -27,7 +33,7 @@ export const useCartStore = create((set, get) => ({
 
   addItem: async (productId, quantity = 1) => {
     try {
-      const res = await axiosInstance.post('/api/student/cart/add/', { product_id: productId, quantity });
+      const res = await axiosInstance.post('/api/student/cart/', { product_id: productId, quantity });
       if (res.data.success) {
         // Refresh cart after adding
         get().fetchCart();
@@ -48,7 +54,7 @@ export const useCartStore = create((set, get) => ({
 
   updateItem: async (itemId, quantity) => {
     try {
-      const res = await axiosInstance.put(`/api/student/cart/update/${itemId}/`, { quantity });
+      const res = await axiosInstance.put(`/api/student/cart/${itemId}/`, { quantity });
       if (res.data.success) {
         set((state) => ({
           items: state.items.map((i) => i.id === itemId ? { ...i, quantity } : i),
@@ -63,7 +69,7 @@ export const useCartStore = create((set, get) => ({
 
   removeItem: async (itemId) => {
     try {
-      await axiosInstance.delete(`/api/student/cart/remove/${itemId}/`);
+      await axiosInstance.delete(`/api/student/cart/${itemId}/`);
       set((state) => ({ items: state.items.filter((i) => i.id !== itemId) }));
       return { success: true };
     } catch {
@@ -73,7 +79,7 @@ export const useCartStore = create((set, get) => ({
 
   clearCart: async () => {
     try {
-      await axiosInstance.delete('/api/student/cart/clear/');
+      await axiosInstance.delete('/api/student/cart/');
       set({ items: [], sellerName: '', sellerLockError: '' });
       return { success: true };
     } catch {

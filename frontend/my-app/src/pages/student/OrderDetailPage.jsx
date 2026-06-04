@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { useOrderStore } from '../../stores/useOrderStore'
 import { formatNaira } from '../../utils/naira'
-import AIChatBubble from '../AIChatBubble'
+import AIChatBubble from '../../components/AIChatBubble'
 import {
   Home, ShoppingBag, UtensilsCrossed, Store, Package, Wallet,
   LogOut, Menu, Search, ShoppingCart,
@@ -11,11 +11,11 @@ import {
 } from 'lucide-react'
 
 const STATUS_CONFIG = {
-  pending:    { bg: '#fef3c7', color: '#d97706', label: 'Pending',    icon: <Clock size={13} /> },
+  pending: { bg: '#fef3c7', color: '#d97706', label: 'Pending', icon: <Clock size={13} /> },
   processing: { bg: '#dbeafe', color: '#1d4ed8', label: 'Processing', icon: <Cog size={13} /> },
-  ready:      { bg: '#dcfce7', color: '#15803d', label: 'Ready',      icon: <CheckCircle size={13} /> },
-  delivered:  { bg: '#f3f4f6', color: '#6b7280', label: 'Delivered',  icon: <Package size={13} /> },
-  cancelled:  { bg: '#fee2e2', color: '#dc2626', label: 'Cancelled',  icon: <XCircle size={13} /> },
+  ready: { bg: '#dcfce7', color: '#15803d', label: 'Ready', icon: <CheckCircle size={13} /> },
+  delivered: { bg: '#f3f4f6', color: '#6b7280', label: 'Delivered', icon: <Package size={13} /> },
+  cancelled: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelled', icon: <XCircle size={13} /> },
 }
 
 export default function OrderDetailPage() {
@@ -36,12 +36,11 @@ export default function OrderDetailPage() {
   }, [id])
 
   const sidebarLinks = [
-    { to: '/student/dashboard',  icon: <Home size={20} />,           label: 'Dashboard' },
-    { to: '/student/products',   icon: <ShoppingBag size={20} />,    label: 'All Products' },
+    { to: '/student/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/student/products', icon: <ShoppingBag size={20} />, label: 'All Products' },
     { to: '/student/cafeterias', icon: <UtensilsCrossed size={20} />, label: 'Cafeterias' },
-    { to: '/student/vendor',     icon: <Store size={20} />,           label: 'My Shop' },
-    { to: '/student/orders',     icon: <Package size={20} />,         label: 'My Orders', active: true },
-    { to: '/student/spending',   icon: <Wallet size={20} />,          label: 'Spending' },
+    { to: '/student/vendor', icon: <Store size={20} />, label: 'My Shop' },
+    { to: '/student/orders', icon: <Package size={20} />, label: 'My Orders', active: true },
   ]
 
   const status = order ? STATUS_CONFIG[order.status] || STATUS_CONFIG.pending : null
@@ -59,7 +58,7 @@ export default function OrderDetailPage() {
       <aside className={`sd-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sd-sidebar-logo">
           <img src="/elizade.png" alt="logo" />
-          {sidebarOpen && <span>Byte<b>N</b>Bite</span>}
+          {sidebarOpen && <span>Campus<b>Connect</b></span>}
         </div>
         <nav className="sd-sidebar-nav">
           {sidebarLinks.map((link) => (
@@ -91,7 +90,6 @@ export default function OrderDetailPage() {
           </form>
           <div className="sd-topbar-right">
             <Link to="/student/orders" className="sd-top-icon"><Package size={20} /><small>Orders</small></Link>
-            <Link to="/student/spending" className="sd-top-icon"><Wallet size={20} /><small>Spending</small></Link>
             <Link to="/student/cart" className="sd-top-icon"><ShoppingCart size={20} /><small>Cart</small></Link>
             <div className="sd-avatar">
               <span>{(user?.full_name || user?.username || 'S')[0].toUpperCase()}</span>
@@ -133,84 +131,84 @@ export default function OrderDetailPage() {
                 </span>
               </div>
 
-          <div className="co-body">
-            <div className="co-left">
+              <div className="co-body">
+                <div className="co-left">
 
-              {/* ITEMS */}
-              <div className="co-box">
-                <h3><Package size={18} /> Order Items</h3>
-                {order.items?.map((item) => (
-                  <div key={item.id} className="co-item">
-                    <div className="co-item-img">
-                      {item.image
-                        ? <img src={item.image} alt={item.name} />
-                        : <div className="co-img-placeholder"><UtensilsCrossed size={22} /></div>
-                      }
-                    </div>
-                    <div className="co-item-info">
-                      <h4>{item.name}</h4>
-                      <p>{item.category}</p>
-                    </div>
-                    <div className="co-item-right">
-                      <span className="co-item-qty">x{item.quantity}</span>
-                      <span className="co-item-price">{formatNaira(item.price * item.quantity)}</span>
-                    </div>
+                  {/* ITEMS */}
+                  <div className="co-box">
+                    <h3><Package size={18} /> Order Items</h3>
+                    {order.items?.map((item) => (
+                      <div key={item.id} className="co-item">
+                        <div className="co-item-img">
+                          {item.image
+                            ? <img src={item.image} alt={item.name} />
+                            : <div className="co-img-placeholder"><UtensilsCrossed size={22} /></div>
+                          }
+                        </div>
+                        <div className="co-item-info">
+                          <h4>{item.name}</h4>
+                          <p>{item.category}</p>
+                        </div>
+                        <div className="co-item-right">
+                          <span className="co-item-qty">x{item.quantity}</span>
+                          <span className="co-item-price">{formatNaira(item.price * item.quantity)}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* DELIVERY */}
-              <div className="co-box">
-                <h3><Truck size={18} /> Delivery Details</h3>
-                <div className="co-delivery-info">
-                  <div className="co-delivery-row">
-                    <span>Seller</span>
-                    <span>{order.seller_name}</span>
+                  {/* DELIVERY */}
+                  <div className="co-box">
+                    <h3><Truck size={18} /> Delivery Details</h3>
+                    <div className="co-delivery-info">
+                      <div className="co-delivery-row">
+                        <span>Seller</span>
+                        <span>{order.seller_name}</span>
+                      </div>
+                      <div className="co-delivery-row">
+                        <span>Delivery Type</span>
+                        <span className={`co-delivery-badge ${order.delivery_type}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {order.delivery_type === 'delivery'
+                            ? <><Truck size={13} /> Delivery</>
+                            : <><Store size={13} /> Pickup</>
+                          }
+                        </span>
+                      </div>
+                      <div className="co-delivery-row">
+                        <span>Status</span>
+                        <span style={{ color: status.color, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {status.icon} {status.label}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="co-delivery-row">
-                    <span>Delivery Type</span>
-                    <span className={`co-delivery-badge ${order.delivery_type}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {order.delivery_type === 'delivery'
-                        ? <><Truck size={13} /> Delivery</>
-                        : <><Store size={13} /> Pickup</>
-                      }
-                    </span>
+
+                </div>
+
+                {/* SUMMARY */}
+                <div className="co-summary">
+                  <h3>Order Summary</h3>
+                  <div className="cart-summary-row">
+                    <span>Subtotal</span>
+                    <span>{formatNaira(subtotal)}</span>
                   </div>
-                  <div className="co-delivery-row">
-                    <span>Status</span>
-                    <span style={{ color: status.color, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {status.icon} {status.label}
-                    </span>
+                  <div className="cart-summary-row">
+                    <span>Delivery Fee</span>
+                    <span>{order.delivery_fee ? formatNaira(order.delivery_fee) : 'Free'}</span>
                   </div>
+                  <div className="cart-summary-total">
+                    <span>Total</span>
+                    <span>{formatNaira(order.total)}</span>
+                  </div>
+
+                  <div style={{ marginTop: '20px', padding: '15px', background: '#eef2ff', borderRadius: '12px', fontSize: '0.85rem', color: '#4f46e5', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <RefreshCw size={15} /> Status updates automatically every 30 seconds
+                  </div>
+
+                  <Link to="/student/orders" className="co-back-btn" style={{ marginTop: '20px' }}>← Back to all orders</Link>
                 </div>
               </div>
-
-            </div>
-
-            {/* SUMMARY */}
-            <div className="co-summary">
-              <h3>Order Summary</h3>
-              <div className="cart-summary-row">
-                <span>Subtotal</span>
-                <span>{formatNaira(subtotal)}</span>
-              </div>
-              <div className="cart-summary-row">
-                <span>Delivery Fee</span>
-                <span>{order.delivery_fee ? formatNaira(order.delivery_fee) : 'Free'}</span>
-              </div>
-              <div className="cart-summary-total">
-                <span>Total</span>
-                <span>{formatNaira(order.total)}</span>
-              </div>
-
-              <div style={{ marginTop: '20px', padding: '15px', background: '#eef2ff', borderRadius: '12px', fontSize: '0.85rem', color: '#4f46e5', fontWeight: 600, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <RefreshCw size={15} /> Status updates automatically every 30 seconds
-              </div>
-
-              <Link to="/student/orders" className="co-back-btn" style={{ marginTop: '20px' }}>← Back to all orders</Link>
-            </div>
-          </div>
-          </>
+            </>
           )}
         </div>
       </div>

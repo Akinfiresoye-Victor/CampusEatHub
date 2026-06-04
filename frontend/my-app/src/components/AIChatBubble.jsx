@@ -11,7 +11,7 @@ const QUICK_ACTIONS = [
 const INITIAL_MESSAGE = {
   id: 1,
   role: 'assistant',
-  text: "Hey there! 👋 I'm your ByteNBite AI Assistant.\n\nI can help you find products, get meal recommendations within your budget, check cafeteria menus, track orders, and more!\n\nWhat would you like to do today?",
+  text: "Hey there! 👋 I'm your CampusConnect AI Assistant.\n\nI can help you find products, get meal recommendations within your budget, check cafeteria menus, track orders, and more!\n\nWhat would you like to do today?",
   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 }
 
@@ -55,42 +55,17 @@ export default function AIChatBubble() {
     setLoading(true)
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('http://localhost:8000/api/student/ai/meal_recommender/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `You are the ByteNBite AI Assistant for a Nigerian university campus marketplace app at Elizade University, Ilara-Mokin, Ondo State.
-
-You help students with:
-- 🍽️ Meal recommendations based on their budget in Naira (₦) — always show the math and list specific meals
-- 🛍️ Browsing products from student vendors on campus
-- 🍴 Checking cafeteria menus and availability
-- 📦 Tracking their orders and order status
-- 💰 Understanding their spending history
-- 🏪 Managing their own shop/vendor listings
-
-Rules:
-- Be friendly, warm, and use relevant emojis
-- Keep responses concise and actionable
-- Currency is always Nigerian Naira (₦)
-- When recommending meals, show the breakdown: meal name + price + total
-- If budget is very low (under ₦200), playfully roast them but still try to help
-- If budget is very high (over ₦10,000), joke about investing instead but still recommend meals
-- Always encourage students to explore the platform`,
-          messages: [
-            ...messages
-              .filter((m) => m.role === 'user' || m.id !== 1)
-              .map((m) => ({ role: m.role, content: m.text })),
-            { role: 'user', content: userText },
-          ],
-        }),
+        credentials: 'include',
+        body: JSON.stringify({ question: userText }),
       })
       const data = await response.json()
       const replyText =
-        data.content?.map((b) => b.text || '').join('') ||
-        "Sorry, I couldn't process that. Please try again."
+        data.success
+          ? data.recommendation
+          : (data.error || "Sorry, I couldn't process that. Please try again.")
       setMessages((prev) => [
         ...prev,
         {
