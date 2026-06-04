@@ -115,6 +115,7 @@ def get_all_cafeterias(request):
                 'owner_name': profile.owner_name if profile else None,  # person's name
                 'business_name': profile.buisness_name if profile else None,
                 'logo': logo_url,
+                'busyness_status': getattr(user, 'busyness_status', 'quiet'),
             })
 
         return JsonResponse({'success': True, 'cafeterias': data}, status=200)
@@ -169,6 +170,7 @@ def get_cafeteria(request, caf_id):
             'business_name': caf_profile.buisness_name if caf_profile else None,
             'owner_name': caf_profile.owner_name if caf_profile else None,
             'logo': logo_url,
+            'busyness_status': getattr(caf_user, 'busyness_status', 'quiet'),
         },
         'products': product_list
     }, status=200)

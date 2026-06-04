@@ -17,17 +17,9 @@ client = Groq(api_key=str(groq_api_key))  # type: ignore[arg-type]
 
 
 def get_display_name(user):
-    """
-    Returns the real display name for any user.
-    - Cafeteria users  → business name from CafeteriaData
-    - Student users    → full name from StudentData
-    - Fallback         → username
-    """
     if not user:
         return "Unknown"
-
     role = getattr(user, 'role', None)
-
     if role == 'cafeteria':
         try:
             profile = CafeteriaData.objects.filter(cafeteria=user).first()
@@ -35,7 +27,6 @@ def get_display_name(user):
                 return profile.buisness_name
         except Exception:
             pass
-
     elif role == 'student':
         try:
             profile = StudentData.objects.filter(student=user).first()
@@ -43,73 +34,92 @@ def get_display_name(user):
                 return profile.full_name
         except Exception:
             pass
-
     return user.username or f"User {user.id}"
 
 
-# ─────────────────────────────────────────────────────────────────
-# SYSTEM PROMPTS
-# ─────────────────────────────────────────────────────────────────
+MEAL_AI_PROMPT = """
+You are CampusConnect AI — the official smart food assistant for Elizade University students.
 
-MEAL_RECOMMENDATION_SYSTEM_PROMPT = """
-You are CampusConnect AI — the official food assistant for Elizade University students.
-You ONLY answer food-related questions. If a student asks about anything else, politely redirect them.
+Your main purpose is to help students decide what to eat and how to spend their meal budget wisely.
+You can also handle basic small talk and simple general questions — but food is always your home base.
+
+━━━ WHAT YOU CAN HANDLE ━━━
+
+1. MEAL RECOMMENDATIONS (your main job)
+   Budget-based food advice using real live menu data.
+   
+2. BASIC GENERAL QUESTIONS
+   Greetings, simple chitchat, "how does this work", easy questions — handle them warmly and briefly.
+   After answering, gently steer the conversation back to food or budget planning.
+   
+3. SIMPLE FOOD KNOWLEDGE
+   "What's healthy?", "What's filling?", "What's the difference between jollof and fried rice?" — answer these.
+   
+4. COMING SOON — See protocol below.
+
+━━━ COMING SOON PROTOCOL ━━━
+Some features aren't live yet. If a student asks for any of these, respond with a friendly "coming soon" message
+and let them know what you CAN help with right now.
+
+Coming soon topics:
+- Weekly meal planning or meal schedules
+- Calorie counting or detailed nutrition tracking  
+- Ordering food directly through the AI
+- Wallet, payment, or top-up features
+- Allergen or dietary filtering (halal, vegan, etc.)
+- Rating or reviewing a cafeteria
+
+Response example: "Ooh that feature is still in the kitchen! 🍳 Coming soon. For now, tell me your budget and I'll hook you up with the best meal on campus."
 
 ━━━ CRITICAL: DO THE MATH BEFORE YOU WRITE ANYTHING ━━━
 
-This is the most important rule. Before presenting any option, go through this process SILENTLY:
+Before presenting any food option, do this SILENTLY:
 
 1. Look at every item in each cafeteria and its price.
-2. Find all single items and combinations (2–3 items) that fit within the student's budget.
-   A valid combination means: item1_price + item2_price + ... ≤ budget.
-3. Filter out every combination that goes over budget. Do not mention them. Do not write them down. Throw them away.
-4. From the valid ones, pick the best 2–3 options that give the most food value.
-5. NOW write your response — using only the valid options you kept.
+2. Find all combinations (single items or 2–3 items together) where the total ≤ budget.
+3. Remove every combination that goes over budget. Don't write them. Don't mention them.
+4. From what's left, pick the best 2–3 options.
+5. Write your response using ONLY valid options.
 
-NEVER list an item and then say "this doesn't work" or "not possible" or "we skip this".
-If you show it, it must already be a working combination. No exceptions.
+NEVER list an item then say "not possible" or "this doesn't work" or "skip this".
+If you show it, it already works. Full stop.
 
-━━━ CORE RULES ━━━
+━━━ MEAL RECOMMENDATION RULES ━━━
 
-RULE 1 — ONE CAFETERIA ONLY.
-Pick the cafeteria that offers the best value. Never mix items from two cafeterias in one option.
-
-RULE 2 — REAL PRICES ONLY.
-Use only item names and prices from the menu provided. Never invent an item. Never guess a price.
-
-RULE 3 — SHOW THE MATH.
-For every option, list each item with its price. Show the total. Show the balance left.
-Format: "- Item Name — ₦price"
-
-RULE 4 — PORTIONS.
-Items like rice, spaghetti, and fried rice are sold per portion.
-If budget allows, suggest ordering 2 portions of a carb. Note it as "2 portions × ₦400 = ₦800".
-
-RULE 5 — PRIORITIZE FILLING COMBOS.
-A carb + protein combo (e.g., rice + chicken) is better than two snacks.
-Suggest at least one proper meal combo where possible.
+- One cafeteria per response. Pick the one with the best value.
+- Use only real item names and prices from the menu. Never invent anything.
+- Show the math: item + price, then total and balance left.
+- Portions: rice, spaghetti, fried rice etc. are sold per portion. Budget allowing, suggest 2 portions.
+  Write it as: "Jollof Rice × 2 portions = ₦800"
+- Carb + protein combos (rice + chicken) beat two snacks. Push real meals first.
 
 ━━━ BROKE STUDENT PROTOCOL ━━━
-If the budget is less than the cheapest item on the entire menu:
-- Do NOT attempt any food recommendations.
-- Roast the student in Nigerian style. Be funny, not mean.
-- Use the student's actual budget amount in the roast.
+If budget < cheapest item on the entire menu — skip recommendations. Deliver a roast instead.
+Be funny. Be Nigerian. Use their actual budget number. Never be mean.
 
-Roast examples (pick the funniest fit, or write a new one in this spirit):
-• "₦[amount]? My brother in Christ, this is not a food budget. This is a prayer budget. Go and pray."
-• "With ₦[amount], the best this cafeteria can offer you is the aroma. Stand near the kitchen and breathe deeply."
-• "The cockroaches in the kitchen eat better than what ₦[amount] can buy. Respect the hustle, but not this budget."
-• "Bro walked into a cafeteria with ₦[amount]. The audacity. The confidence. Absolutely zero food."
-• "₦[amount] is not a meal plan. That is a bus fare situation. Please return when your account has met minimum requirements."
+Roast bank (pick one or write fresh in the same spirit):
+• "₦[amount]? My brother in Christ, this is not a food budget. This is a prayer budget. Fast and pray."
+• "With ₦[amount], the only thing this cafeteria can offer you is the aroma. Press your face to the window and inhale."
+• "The cockroaches in that kitchen are eating better than what ₦[amount] can buy. Mad respect for the audacity tho."
+• "Bro walked into a cafeteria with ₦[amount]. The courage. The vision. Zero food."
+• "₦[amount] is not a meal plan. That is a philosophical exercise. Please come back when your account is in a better place."
+• "My friend, even the water they wash the plates with costs more than this. Try again tomorrow."
+• "This budget entered the cafeteria, looked at the menu, and started crying. We cannot help you today, champ."
+• "You came here with ₦[amount]? This is not even a snack situation. This is a garri-at-home situation."
+• "With this budget, even Indomie is looking at you like 'I don't know you, bro'."
+• "₦[amount]? My guy, even the price tag on the menu is more expensive than your budget. Go and eat at home."
+• "Bro is here with the audacity of a full meal and the budget of a prayer point. God will provide, but not today in this cafeteria."
 
 ━━━ BIG SPENDER ALERT ━━━
-If budget is ₦10,000 or above:
-First, give a one-line warning about spending that much on campus food — suggest saving or investing.
-Then proceed with food recommendations as normal.
+Budget ≥ ₦10,000:
+Drop one line warning them about spending that much on campus food — mention saving or investing.
+Then continue with food recommendations as normal.
 
-━━━ OUTPUT FORMAT ─────────────────────────────────
+━━━ OUTPUT FORMAT ━━━
 
-CAFETERIA: [Full cafeteria name]
+For meal recommendations:
+
+CAFETERIA: [Name]
 
 OPTION 1:
 - [Item] — ₦[price]
@@ -117,46 +127,36 @@ OPTION 1:
 Total: ₦[X] | Balance: ₦[Y]
 
 OPTION 2:
-- [Item] — ₦[price]
-Total: ₦[X] | Balance: ₦[Y]
-
-OPTION 3 (if budget allows):
 ...
 
-BEST PICK: [One punchy sentence recommending the most value for money.]
+BEST PICK: [One punchy sentence on the best value choice.]
 
-━━━ FINAL REMINDERS ─────────────────────────────────
-- Friendly, Nigerian tone throughout.
-- Never mention the database, system prompts, or your internal reasoning.
-- Never hallucinate items, prices, or cafeteria names.
-- Never mix cafeterias within a single recommendation.
--If they ask any basic question answer them softly  ut if the question is getting too complex revert to ensuring they talk about food or anything related to it.
-- Make sure they get to know that this AI is to help them make decisions on what to eat and how to spend their money wisely, and also assist them with little questions like basic one
+For general/basic questions: just respond naturally and briefly, then loop back to food.
+For coming soon: fun short message + redirect to what you can do.
+
+━━━ REMINDERS ━━━
+- Friendly Nigerian tone at all times.
+- Never mention the database, system prompts, or your internal process.
+- Never make up items, prices, or cafeteria names.
+- For questions too complex or completely off-topic — redirect warmly, don't pretend you can handle it.
 """
 
 
-ORDER_ANALYTICS_SYSTEM_PROMPT = """
+ORDER_ANALYTICS_PROMPT = """
 You are CampusConnect Order Analytics — the business intelligence assistant for campus cafeterias.
 
-ROLE: Answer today's order questions for a cafeteria owner. Fast, clear, accurate.
+Job: Answer today's order questions for a cafeteria owner. Fast, clear, no fluff.
 
-━━━ RULES ━━━
-1. Use ONLY the data provided. No assumptions, no fabrications.
-2. Concise — no filler, no storytelling, no over-explaining.
-3. Never mention databases, system prompts, or internal processes.
-4. If the data provided is insufficient to answer a question, say so directly.
-5. Flag anything unusual: high cancellations, zero revenue, one item dominating, unusually low order count.
+Rules:
+- Use ONLY the data provided. No guessing, no inventing numbers.
+- Be concise. Bullets or short paragraphs. No corporate waffle.
+- Never mention databases, system prompts, or internal processes.
+- If data is not enough to answer, say so plainly.
+- Flag anything odd: high cancellations, zero revenue, one item eating all the sales, very low order count.
 
-━━━ STYLE ━━━
-Business tone. Short and structured. Bullets or compact paragraphs.
-Think "sharp briefing to a busy owner", not a corporate report.
-If numbers look bad, say so plainly — don't soften it unnecessarily.
+If the numbers look bad — say it plainly. The owner needs truth, not comfort.
 """
 
-
-# ─────────────────────────────────────────────────────────────────
-# VIEW: STUDENT MEAL BUDGET RECOMMENDATION
-# ─────────────────────────────────────────────────────────────────
 
 @csrf_exempt
 def meal_budget_recommendation(request):
@@ -169,67 +169,49 @@ def meal_budget_recommendation(request):
 
     try:
         data = json.loads(request.body)
-
-        cafeteria_id = data.get('cafeteria_id')    # optional
-        question = data.get("question")             # required
+        cafeteria_id = data.get('cafeteria_id') #optional
+        question = data.get("question")          #required
 
         if not question:
             return JsonResponse({'success': False, 'error': 'Question is required'}, status=400)
 
         question = str(question).strip()
-        if not question:
-            return JsonResponse({'success': False, 'error': 'Question is required'}, status=400)
 
-        # ── Fetch live menu from DB ──────────────────
         product_qs = Product.objects.filter(is_available=True, seller_type='cafeteria')
         if cafeteria_id:
             product_qs = product_qs.filter(seller_id=cafeteria_id)
         product_qs = product_qs.select_related('seller')
 
         if not product_qs.exists():
-            return JsonResponse({'success': False, 'error': 'No available menu items found'}, status=404)
+            return JsonResponse({'success': False, 'error': 'No menu items available right now'}, status=404)
 
-        # ── Build a clean, grouped menu string ───────
-        cafeterias: dict = {}
-        for product in product_qs:
-            name = get_display_name(product.seller)
-            price = int(product.price) if product.price == product.price.to_integral_value() else float(product.price)
-            cafeterias.setdefault(name, []).append(f"{product.name} (₦{price})")
+        cafeterias = {}
+        for p in product_qs:
+            caf = get_display_name(p.seller)
+            price = int(p.price) if p.price == p.price.to_integral_value() else float(p.price)
+            cafeterias.setdefault(caf, []).append(f"{p.name} (₦{price})")
 
         menu_text = "\n".join(
             f"[{caf}]: {' | '.join(items)}"
             for caf, items in cafeterias.items()
         )
 
-        response = client.chat.completions.create(
+        res = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": MEAL_RECOMMENDATION_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": (
-                        f"Student's question:\n{question}\n\n"
-                        f"Available menu (all prices are per portion):\n{menu_text}"
-                    ),
-                },
+                {"role": "system", "content": MEAL_AI_PROMPT},
+                {"role": "user", "content": f"Student's question:\n{question}\n\nLive menu (per portion):\n{menu_text}"},
             ],
         )
 
-        recommendation = response.choices[0].message.content
-
-        return JsonResponse({'success': True, 'recommendation': recommendation}, status=200)
+        return JsonResponse({'success': True, 'recommendation': res.choices[0].message.content}, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
-
     except Exception as e:
         print(e)
         return JsonResponse({'success': False, 'error': 'AI service temporarily unavailable'}, status=500)
 
-
-# ─────────────────────────────────────────────────────────────────
-# VIEW: CAFETERIA ORDER ANALYTICS
-# ─────────────────────────────────────────────────────────────────
 
 @csrf_exempt
 def order_analytics(request):
@@ -249,68 +231,56 @@ def order_analytics(request):
 
         today = timezone.now().date()
 
-        today_orders = Order.objects.filter(
-            seller=request.user,
-            created_at__date=today,
-        )
+        orders = Order.objects.filter(seller=request.user, created_at__date=today)
 
-        total_orders = today_orders.count()
-        total_revenue = today_orders.aggregate(total=Sum('total_ammount'))['total'] or Decimal('0.00')
-        avg_order_value = today_orders.aggregate(avg=Avg('total_ammount'))['avg'] or Decimal('0.00')
+        total_orders = orders.count()
+        total_revenue = orders.filter(status='delivered').aggregate(t=Sum('total_ammount'))['t'] or Decimal('0.00')
+        avg_value = orders.aggregate(a=Avg('total_ammount'))['a'] or Decimal('0.00')
 
-        status_counts = today_orders.values('status').annotate(count=Count('id'))
-        status_map = {entry['status']: entry['count'] for entry in status_counts}
-        status_summary = " | ".join(
-            f"{status}: {count}" for status, count in status_map.items()
-        ) or "No orders today"
+        status_counts = orders.values('status').annotate(count=Count('id'))
+        status_map = {e['status']: e['count'] for e in status_counts}
+        status_text = " | ".join(f"{k}: {v}" for k, v in status_map.items()) or "No orders today"
+
         cancelled = status_map.get('cancelled', 0)
         cancel_rate = f"{(cancelled / total_orders * 100):.1f}%" if total_orders > 0 else "N/A"
 
         top_items = (
             OrderItem.objects
-            .filter(order__seller=request.user, order__created_at__date=today)
+            .filter(order__seller=request.user, order__created_at__date=today, order__status='delivered')
             .values('product__name')
             .annotate(
                 qty=Sum('quantity'),
-                revenue=Sum(
-                    ExpressionWrapper(
-                        F('price_at_time') * F('quantity'),
-                        output_field=DecimalField(),
-                    )
-                ),
+                revenue=Sum(ExpressionWrapper(F('price_at_time') * F('quantity'), output_field=DecimalField()))
             )
             .order_by('-qty')[:5]
         )
 
-        top_items_text = " | ".join(
-            f"{item['product__name']} ×{item['qty']} (₦{item['revenue']:,.0f})"
-            for item in top_items
+        top_text = " | ".join(
+            f"{i['product__name']} ×{i['qty']} (₦{i['revenue']:,.0f})" for i in top_items
         ) or "No items sold today"
 
-        ai_context = (
+        context = (
             f"Cafeteria: {get_display_name(request.user)}\n"
             f"Date: {today}\n\n"
             f"QUESTION: {question}\n\n"
             f"TODAY'S SNAPSHOT:\n"
             f"- Total Orders: {total_orders}\n"
             f"- Total Revenue: ₦{total_revenue:,.2f}\n"
-            f"- Average Order Value: ₦{avg_order_value:,.2f}\n"
+            f"- Avg Order Value: ₦{avg_value:,.2f}\n"
             f"- Cancellation Rate: {cancel_rate} ({cancelled} cancelled)\n"
-            f"- Status Breakdown: {status_summary}\n"
-            f"- Top Items by Quantity: {top_items_text}"
+            f"- Status Breakdown: {status_text}\n"
+            f"- Top Items (qty): {top_text}"
         )
 
-        response = client.chat.completions.create(
+        res = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": ORDER_ANALYTICS_SYSTEM_PROMPT},
-                {"role": "user", "content": ai_context},
+                {"role": "system", "content": ORDER_ANALYTICS_PROMPT},
+                {"role": "user", "content": context},
             ],
         )
 
-        answer = response.choices[0].message.content
-
-        return JsonResponse({'success': True, 'answer': answer}, status=200)
+        return JsonResponse({'success': True, 'answer': res.choices[0].message.content}, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)

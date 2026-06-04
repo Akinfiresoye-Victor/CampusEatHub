@@ -9,6 +9,9 @@ import json
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 from shop.models import Order, OrderItem
+from django.db.models import Sum, Count
+from django.utils import timezone
+from decimal import Decimal
 User = get_user_model()
 
 
@@ -176,6 +179,30 @@ def manage_cafeteria_product(request, product_id):
 
 
 
+def cafeteria_status(request):
+    auth_error = check_role_guard(request, required_role='cafeteria')
+    if auth_error:
+        return auth_error
+
+    if request.method == 'GET':
+        status_value = getattr(request.user, 'busyness_status', 'quiet')
+        return JsonResponse({'success': True, 'data': {'busyness_status': status_value}}, status=200)
+
+    if request.method == 'PATCH':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON body'}, status=400)
+
+        busyness_status = data.get('busyness_status')
+        if busyness_status not in ['quiet', 'moderate', 'busy']:
+            return JsonResponse({'success': False, 'error': 'Invalid busyness_status'}, status=400)
+
+        request.user.busyness_status = busyness_status
+        request.user.save(update_fields=['busyness_status'])
+        return JsonResponse({'success': True, 'data': {'busyness_status': busyness_status}}, status=200)
+
+    return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
 
 # API endpoint that query and get all the orders goten from students
@@ -266,9 +293,9 @@ def cafeteria_order_status(request, order_id):
         allowed_transitions = {
             'pending':    ['processing', 'cancelled'],
             'processing': ['ready', 'delivered'],
-            'ready':      [],   # terminal — no further moves
-            'delivered':  [],   # terminal
-            'cancelled':  [],   # terminal
+            'ready':      ['delivered'],
+            'delivered':  [],
+            'cancelled':  [],
         }
 
         current_status = order.status
@@ -302,3 +329,87 @@ def cafeteria_order_status(request, order_id):
 
     else:
         return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+
+# Stats endpoint for cafeteria dashboard
+def cafeteria_stats(request):
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+    
+    auth_error = check_role_guard(request, required_role='cafeteria')
+    if auth_error:
+        return auth_error
+    
+    try:
+        today = timezone.now().date()
+        
+        # Total orders for this cafeteria
+        total_orders = Order.objects.filter(seller=request.user).count()
+        
+        # Revenue today (only delivered orders)
+        revenue_today = Order.objects.filter(
+            seller=request.user,
+            status='delivered',
+            created_at__date=today
+        ).aggregate(total=Sum('total_ammount'))['total'] or Decimal('0.00')
+        
+        # Active menu items count
+        menu_items_count = Product.objects.filter(
+            seller=request.user,
+            seller_type='cafeteria',
+            is_available=True
+        ).count()
+        
+        # Pending orders count (pending or processing status)
+        pending_orders_count = Order.objects.filter(
+            seller=request.user,
+            status__in=['pending', 'processing']
+        ).count()
+        
+        return JsonResponse({
+            'success': True,
+            'stats': {
+                'total_orders': total_orders,
+                'revenue_today': str(revenue_today),
+                'menu_items_count': menu_items_count,
+                'pending_orders_count': pending_orders_count,
+            }
+        }, status=200)
+    
+    except Exception as e:
+        print(e)
+        return JsonResponse({'success': False, 'error': 'Error retrieving stats'}, status=500)
+
+
+# Top selling items endpoint for cafeteria dashboard
+def cafeteria_top_items(request):
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+    
+    auth_error = check_role_guard(request, required_role='cafeteria')
+    if auth_error:
+        return auth_error
+    
+    try:
+        # Get top 5 items by quantity sold from delivered orders only
+        top_items = (
+            OrderItem.objects
+            .filter(order__seller=request.user, order__status='delivered')
+            .values('product__name')
+            .annotate(total_sold=Sum('quantity'))
+            .order_by('-total_sold')[:5]
+        )
+        
+        data = [
+            {'product_name': item['product__name'], 'total_sold': item['total_sold']}
+            for item in top_items
+        ]
+        
+        return JsonResponse({
+            'success': True,
+            'top_items': data
+        }, status=200)
+    
+    except Exception as e:
+        print(e)
+        return JsonResponse({'success': False, 'error': 'Error retrieving top items'}, status=500)

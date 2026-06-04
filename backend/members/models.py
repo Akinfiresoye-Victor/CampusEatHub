@@ -9,5 +9,7 @@ class User(AbstractUser):
     )
     role=models.CharField(max_length=15, choices=USER_TYPE_CHOICES, default='student')
     email=models.EmailField(unique=True, blank=True, null=True)
+    busyness_status = models.CharField(max_length=10, default='quiet')
+
     def __str__(self):
         return f'{self.username} - {self.role}'

@@ -28,7 +28,6 @@ def login_user(request):
         # Cafeteria users only have email, so the frontend might send 'email' instead of 'username'
         login_identifier = data.get('username') or data.get('email')
         password = data.get('password')
-
         # Validate both fields exist before doing anything else
         if not login_identifier:
             return JsonResponse({'success': False, 'error': 'Username or email is required'}, status=400)
@@ -38,6 +37,7 @@ def login_user(request):
         # Resolve the identifier to a username string that authenticate() can use
         if "@" in login_identifier:
             try:
+                print('using email')
                 user_obj = User.objects.get(email=login_identifier)
                 username_to_auth = user_obj.username
             except User.DoesNotExist:
@@ -108,7 +108,8 @@ def register_student(request):
             if form.is_valid():
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
-                request.user.role='student'
+                user.set_password(cleaned['password'])
+                user.role='student'
                 user.save()
                 StudentData.objects.create(
                     student=user,
@@ -118,7 +119,7 @@ def register_student(request):
                 
                 print('registered')
                 login(request, user)
-                return JsonResponse({'success': True, 'role':'student', 'username':request.user.username}, status=200)
+                return JsonResponse({'success': True, 'role':'student', 'username':user.username}, status=200)
             else:
                 print('Form Errors' ,form.errors)
                 return JsonResponse({'success': False, 'error': form.errors}, status=400)
@@ -148,6 +149,7 @@ def register_cafeteria(request):
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
                 user.username=user.email
+                user.set_password(cleaned['password'])
                 user.role='cafeteria'
                 user.save()
                 buisness_name=cleaned['business_name']

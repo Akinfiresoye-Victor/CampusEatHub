@@ -39,7 +39,7 @@ class CafeteriaSignUpForm(ModelForm):
         attrs={'class':'form-control', 'placeholder': 'e.g John Doe'}))
     class Meta:
         model=User
-        fields=('email', 'password', 'password2')
+        fields=('email', 'password', 'password2',)
 
     password=forms.CharField(max_length=50, widget=forms.PasswordInput(
         attrs={'class': 'form-control', 'placeholder': 'Enter Password'}), help_text='', label='')
@@ -49,3 +49,10 @@ class CafeteriaSignUpForm(ModelForm):
     
     email=forms.EmailField(max_length=75, widget=forms.EmailInput(
         attrs={'class':'form-control', 'placeholder': 'Enter Personal Email'}), help_text='', label='')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        email = cleaned_data.get('email')
+        if email:
+            self.instance.username = email
+        return cleaned_data
