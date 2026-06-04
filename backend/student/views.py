@@ -381,7 +381,10 @@ def manage_student_cart(request, cart_id=None):
                 return JsonResponse({'success': False, 'error': 'Invalid quantity'}, status=400)
 
             try:
-                product = Product.objects.get(pk=cart_id)
+                product_id = data.get('product_id')
+                if not product_id:
+                    return JsonResponse({'success': False, 'error': 'product_id is required'}, status=400)
+                product = Product.objects.get(pk=product_id)
             except Product.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Product not found'}, status=404)
 

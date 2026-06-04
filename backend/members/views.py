@@ -103,6 +103,7 @@ def register_student(request):
     try:
         if request.method == 'POST':
             data = json.loads(request.body)
+            print(data)
             form = StudentSignUpForm(data)
             if form.is_valid():
                 cleaned=form.cleaned_data
@@ -146,8 +147,8 @@ def register_cafeteria(request):
             if form.is_valid():
                 cleaned=form.cleaned_data
                 user = form.save(commit=False)
-                user.username=uuid.uuid4()
-                request.user.role='cafeteria'
+                user.username=user.email
+                user.role='cafeteria'
                 user.save()
                 buisness_name=cleaned['business_name']
                 CafeteriaData.objects.create(
@@ -170,7 +171,7 @@ def register_cafeteria(request):
 
 
 
-
+@csrf_exempt
 def me(request):
     if request.method != "GET":
         return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)

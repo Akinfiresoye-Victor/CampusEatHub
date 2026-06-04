@@ -16,11 +16,11 @@ class StudentSignUpForm(ModelForm):
         attrs={'class':'form-control', 'placeholder': 'e.g EU240102-4159'}))
     class Meta:
         model=User
-        fields=('username', 'email', 'password1', 'password2')
+        fields=('username', 'email', 'password', 'password2')
     username=forms.CharField(max_length=20, widget=forms.TextInput(
         attrs={'class':'form-control', 'placeholder':'Username'}), label='', help_text='')
     
-    password1=forms.CharField(max_length=50, widget=forms.PasswordInput(
+    password=forms.CharField(max_length=50, widget=forms.PasswordInput(
         attrs={'class': 'form-control', 'placeholder': 'Enter Password'}), help_text='', label='')
     
     password2=forms.CharField(max_length=50, widget=forms.PasswordInput(
@@ -39,9 +39,9 @@ class CafeteriaSignUpForm(ModelForm):
         attrs={'class':'form-control', 'placeholder': 'e.g John Doe'}))
     class Meta:
         model=User
-        fields=('email', 'password1', 'password2')
+        fields=('email', 'password', 'password2')
 
-    password1=forms.CharField(max_length=50, widget=forms.PasswordInput(
+    password=forms.CharField(max_length=50, widget=forms.PasswordInput(
         attrs={'class': 'form-control', 'placeholder': 'Enter Password'}), help_text='', label='')
     
     password2=forms.CharField(max_length=50, widget=forms.PasswordInput(
